@@ -82,7 +82,7 @@
                         Schritt 1: Kontoauszug hochladen (Automatische Erkennung)
                     </div>
                     <p class="text-[11px] text-gray-400 max-w-md">
-                        PDF oder CSV per Drag & Drop hier ablegen. Nicht gefundene Felder bleiben leer zur manuellen Ergänzung.<br>
+                        PDF oder CSV per Drag & Drop hier ablegen. Die erkannten Beträge werden sofort in die Felder übernommen.<br>
                         <span class="text-emerald-400 font-semibold">🔒 100% Datenschutz:</span> Verbleibt lokal in deinem Browser.
                     </p>
                     <input type="file" id="statement_file" accept=".pdf,.csv,.txt" class="hidden" onchange="handleFileUpload(event)">
@@ -93,17 +93,49 @@
                 </div>
             </div>
 
-            <!-- Scan Action Choice (Visible after upload) -->
-            <div id="scan_action_box" class="mb-6 p-4 rounded-xl border border-emerald-500/40 bg-navy-800/90 hidden text-center space-y-3">
-                <div class="text-xs text-emerald-400 font-semibold">
-                    ✅ Auszug erfolgreich gescannt! Wie möchtest du fortfahren?
+            <!-- Scan Overview & Action Box (Visible immediately after upload) -->
+            <div id="scan_action_box" class="mb-6 p-5 rounded-xl border border-gold-500/40 bg-navy-900/90 hidden space-y-4">
+                <div class="flex items-center justify-between border-b border-gold-500/20 pb-2">
+                    <div class="font-heading font-bold text-sm text-gold-400 flex items-center gap-2">
+                        <span>📊</span> Erkannte Kosten-Aufstellung aus deinem Auszug
+                    </div>
+                    <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 font-semibold">100% Lokal</span>
                 </div>
-                <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
-                    <button onclick="calculateResults()" class="gold-gradient text-navy-900 font-heading font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-md hover:opacity-95 transition-all">
-                        ⚡ Direkt auswerten (nur Auszugswerte)
+
+                <!-- Live Mini-Grid of Detected Values -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs text-gray-200">
+                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
+                        <span class="block text-[10px] text-gray-400 uppercase">Einnahmen Netto</span>
+                        <span class="font-bold text-emerald-400 text-sm" id="prev_income">0 €</span>
+                    </div>
+                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
+                        <span class="block text-[10px] text-gray-400 uppercase">Miete & Strom</span>
+                        <span class="font-bold text-white text-sm" id="prev_housing">0 €</span>
+                    </div>
+                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
+                        <span class="block text-[10px] text-gray-400 uppercase">Mobilität / Sprit</span>
+                        <span class="font-bold text-white text-sm" id="prev_mobility">0 €</span>
+                    </div>
+                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
+                        <span class="block text-[10px] text-gray-400 uppercase">Versicherungen</span>
+                        <span class="font-bold text-white text-sm" id="prev_insurance">0 €</span>
+                    </div>
+                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
+                        <span class="block text-[10px] text-gray-400 uppercase">Abos & Digital</span>
+                        <span class="font-bold text-gold-400 text-sm" id="prev_subs">0 €</span>
+                    </div>
+                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
+                        <span class="block text-[10px] text-gray-400 uppercase">Lebensmittel</span>
+                        <span class="font-bold text-white text-sm" id="prev_groceries">0 €</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
+                    <button onclick="calculateResults()" class="flex-1 gold-gradient text-navy-900 font-heading font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-gold-500/20 hover:opacity-95 transition-all">
+                        ⚡ Direkt auswerten
                     </button>
-                    <button onclick="nextStep(1)" class="border border-gold-500/50 text-gold-400 font-heading font-semibold px-4 py-2.5 rounded-lg text-xs hover:bg-gold-500/10 transition-all">
-                        ✏️ Werte prüfen & manuell ergänzen
+                    <button onclick="nextStep(1)" class="flex-1 border border-gold-500/50 text-gold-400 font-heading font-semibold py-3 rounded-xl text-xs hover:bg-gold-500/10 transition-all">
+                        ✏️ Werte prüfen & im Formular anpassen
                     </button>
                 </div>
             </div>
@@ -116,7 +148,7 @@
                 </h2>
                 <div>
                     <label class="block text-xs uppercase tracking-wider text-gray-300 mb-1">Monatliches Netto-Haupteinkommen (€)</label>
-                    <input type="number" id="income_main" placeholder="z. B. 3200 (wird auto-erkannt)" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:border-gold-400">
+                    <input type="number" id="income_main" placeholder="z. B. 3200" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:border-gold-400">
                 </div>
                 <div>
                     <label class="block text-xs uppercase tracking-wider text-gray-300 mb-1">Nebeneinkünfte / Business / Dividenden (€/Monat)</label>
@@ -321,19 +353,22 @@
         }
 
         function categorizeBankText(text) {
-            const lower = text.toLowerCase();
-            
-            // Smart Regex Extraction for German/Euro formatted amounts
+            // Helper function to extract and sum amounts matching regex patterns
+            // Matches formats like: -1.250,00 | - 1250,00 | 145,00 | 17.99
             const extractCategorySum = (keywordsPattern) => {
                 let sum = 0;
                 const lines = text.split(/\r?\n|\s{3,}/);
                 for (const line of lines) {
                     if (keywordsPattern.test(line)) {
-                        const matches = line.match(/(\d{1,3}(?:\.\d{3})*,\d{2})|(\d{1,4}\.\d{2})/g);
+                        // Look for numbers with comma or dot decimals
+                        const matches = line.match(/[-+]?\s*(\d{1,3}(?:\.\d{3})*,\d{2})|(\d{1,4}\.\d{2})/g);
                         if (matches) {
                             for (const m of matches) {
-                                const val = parseFloat(m.replace('.', '').replace(',', '.'));
-                                if (val > 0 && val < 10000) sum += val;
+                                const clean = m.replace(/[+\-\s]/g, '').replace('.', '').replace(',', '.');
+                                const val = parseFloat(clean);
+                                if (!isNaN(val) && val > 0 && val < 20000) {
+                                    sum += val;
+                                }
                             }
                         }
                     }
@@ -341,7 +376,6 @@
                 return sum;
             };
 
-            // Reset only if detected, otherwise leave empty for user input
             const rent = extractCategorySum(/miete|stadtwerke|vattenfall|strom|gas|wohngeld|hausverwaltung/i);
             const ins = extractCategorySum(/allianz|huk|ergo|versicherung|haftpflicht|axa|barmer|techniker/i);
             const subs = extractCategorySum(/netflix|spotify|apple|gym|mcfit|fitx|prime|chatgpt|disney|audible|youtube/i);
@@ -350,13 +384,22 @@
             const inc = extractCategorySum(/gehalt|lohn|bezüge|salary|arbeitgeber/i);
             const debt = extractCategorySum(/klarna|rate|kredit|santander|dispo/i);
 
+            // 1) Auto-fill input fields (Step 1-3)
+            if (inc > 0) document.getElementById('income_main').value = Math.round(inc);
             if (rent > 0) document.getElementById('cost_housing').value = Math.round(rent);
+            if (mob > 0) document.getElementById('cost_mobility').value = Math.round(mob);
             if (ins > 0) document.getElementById('cost_insurance').value = Math.round(ins);
             if (subs > 0) document.getElementById('cost_subs').value = Math.round(subs);
-            if (mob > 0) document.getElementById('cost_mobility').value = Math.round(mob);
             if (groc > 0) document.getElementById('cost_groceries').value = Math.round(groc);
-            if (inc > 0) document.getElementById('income_main').value = Math.round(inc);
             if (debt > 0) document.getElementById('cost_debt').value = Math.round(debt);
+
+            // 2) Populate the live scan preview grid
+            document.getElementById('prev_income').innerText = (inc > 0 ? Math.round(inc) + ' €' : '–');
+            document.getElementById('prev_housing').innerText = (rent > 0 ? Math.round(rent) + ' €' : '–');
+            document.getElementById('prev_mobility').innerText = (mob > 0 ? Math.round(mob) + ' €' : '–');
+            document.getElementById('prev_insurance').innerText = (ins > 0 ? Math.round(ins) + ' €' : '–');
+            document.getElementById('prev_subs').innerText = (subs > 0 ? Math.round(subs) + ' €' : '–');
+            document.getElementById('prev_groceries').innerText = (groc > 0 ? Math.round(groc) + ' €' : '–');
         }
 
         function calculateResults() {
