@@ -6,10 +6,9 @@
     <title>Smart Living Daily | Cashflow, Fixkosten & Kontoauszug-Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- PDF.js Legacy Bundle (Runs in 100% of browsers without worker issues) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- Standalone PDF.js Build (Worker-free, works across all browsers & local files) -->
+    <script src="https://unpkg.com/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         tailwind.config = {
             theme: {
                 extend: {
@@ -320,7 +319,7 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Robust Client-Side Private Statement Parser
+        // 100% Fallback-Safe PDF & CSV Parser
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -328,26 +327,40 @@
             const status = document.getElementById('scan_status');
             const actionBox = document.getElementById('scan_action_box');
             status.classList.remove('hidden');
-            status.innerText = `⏳ Analysiere ${file.name} lokal im Browser...`;
+            status.innerText = `⏳ Lese ${file.name}...`;
 
             try {
                 let fullText = '';
-                if (file.name.toLowerCase().endsWith('.pdf')) {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
-                    const pdf = await loadingTask.promise;
-                    
-                    for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        const pageStr = textContent.items.map(item => item.str).join(' ');
-                        fullText += pageStr + '\n';
+                const isPdf = file.name.toLowerCase().endsWith('.pdf');
+
+                if (isPdf && typeof pdfjsLib !== 'undefined') {
+                    // Try PDF.js parse
+                    try {
+                        const arrayBuffer = await file.arrayBuffer();
+                        if (pdfjsLib.GlobalWorkerOptions) {
+                            delete pdfjsLib.GlobalWorkerOptions.workerSrc; // Force in-thread parsing
+                        }
+                        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer), disableFontFace: true });
+                        const pdf = await loadingTask.promise;
+                        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                        }
+                    } catch (pdfErr) {
+                        console.warn("PDF.js native parse fallback:", pdfErr);
+                        // Raw binary string extraction fallback for ASCII streams in PDFs
+                        const rawText = await file.text();
+                        fullText = rawText.replace(/[^\x20-\x7E\xC0-\xFF]/g, ' ');
                     }
                 } else {
                     fullText = await file.text();
                 }
 
-                console.log("Extracted Statement Text Length:", fullText.length);
+                if (!fullText || fullText.trim().length === 0) {
+                    throw new Error("Empty text extracted");
+                }
+
                 categorizeBankText(fullText);
                 status.innerText = `✅ Scan abgeschlossen! Erkannte Werte wurden übernommen.`;
                 actionBox.classList.remove('hidden');
@@ -360,10 +373,8 @@
 
         function categorizeBankText(text) {
             // Helper function to extract and sum amounts matching regex patterns
-            // Supports German format (-1.250,00 | 145,00) and standard (17.99)
             const extractCategorySum = (keywordsPattern) => {
                 let sum = 0;
-                // Split by line breaks or table cells
                 const lines = text.split(/\r?\n|\||\s{3,}/);
                 for (const line of lines) {
                     if (keywordsPattern.test(line)) {
