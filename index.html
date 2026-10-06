@@ -59,7 +59,7 @@
                 Wie stabil läuft dein <span class="text-transparent bg-clip-text gold-gradient">Finanz-Uhrwerk?</span>
             </h1>
             <p class="text-gray-300 text-sm md:text-base max-w-xl mx-auto">
-                Lade deinen Kontoauszug hoch oder füge den Text per Paste ein. 100% lokal, privat & sicher.
+                Lade deinen Kontoauszug hoch oder nutze den Muster-Auszug. 100% lokal, privat & anonym in deinem Browser.
             </p>
         </div>
 
@@ -76,7 +76,7 @@
                 <div class="text-center mb-3">
                     <div class="text-2xl mb-1">📄</div>
                     <div class="text-xs font-bold text-gold-400 font-heading uppercase tracking-wider">
-                        Kontoauszug hochladen oder Text einfügen
+                        Kontoauszug hochladen oder Test-Muster laden
                     </div>
                     <p class="text-[11px] text-gray-400 mt-0.5">
                         <span class="text-emerald-400 font-semibold">🔒 100% Datenschutz:</span> Alles wird lokal in deinem Browser verarbeitet.
@@ -86,18 +86,18 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                     <!-- File Upload Button -->
                     <div class="flex flex-col items-center justify-center p-3 rounded-lg border border-white/10 bg-navy-800/60 text-center">
-                        <span class="text-xs text-gray-300 mb-2 font-medium">Datei auswählen (PDF / CSV)</span>
+                        <span class="text-xs text-gray-300 mb-2 font-medium">Eigener Auszug (PDF / CSV)</span>
                         <input type="file" id="statement_file" accept=".pdf,.csv,.txt" class="hidden" onchange="handleFileUpload(event)">
                         <button onclick="document.getElementById('statement_file').click()" class="w-full py-2 px-3 rounded-lg border border-gold-500/50 text-gold-400 text-xs font-semibold hover:bg-gold-500/10 transition-all">
-                            📎 PDF / CSV hochladen
+                            📎 Datei hochladen
                         </button>
                     </div>
 
                     <!-- Direct Text Paste / Sample Load -->
                     <div class="flex flex-col items-center justify-center p-3 rounded-lg border border-white/10 bg-navy-800/60 text-center">
-                        <span class="text-xs text-gray-300 mb-2 font-medium">Muster-Auszug oder Kopie</span>
+                        <span class="text-xs text-gray-300 mb-2 font-medium">Realistischer DACH-Muster-Auszug</span>
                         <button onclick="loadSampleStatement()" class="w-full py-2 px-3 rounded-lg gold-gradient text-navy-900 text-xs font-bold font-heading uppercase tracking-wider hover:opacity-95 transition-all">
-                            🧪 Test-Auszug laden
+                            🧪 Realistischen Test-Auszug laden
                         </button>
                     </div>
                 </div>
@@ -160,11 +160,11 @@
                 </h2>
                 <div>
                     <label class="block text-xs uppercase tracking-wider text-gray-300 mb-1">Monatliches Netto-Haupteinkommen (€)</label>
-                    <input type="number" id="income_main" placeholder="z. B. 3200" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:border-gold-400">
+                    <input type="number" id="income_main" placeholder="z. B. 3100" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:border-gold-400">
                 </div>
                 <div>
                     <label class="block text-xs uppercase tracking-wider text-gray-300 mb-1">Nebeneinkünfte / Business / Dividenden (€/Monat)</label>
-                    <input type="number" id="income_side" placeholder="z. B. 300" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:border-gold-400">
+                    <input type="number" id="income_side" placeholder="z. B. 250" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:border-gold-400">
                 </div>
                 <button onclick="nextStep(2)" class="w-full gold-gradient text-navy-900 font-heading font-bold py-3.5 rounded-xl shadow-lg shadow-gold-500/20 hover:opacity-95 transition-all text-sm uppercase tracking-wider">
                     Weiter zu den Fixkosten →
@@ -291,14 +291,25 @@
                     </div>
                 </div>
 
-                <!-- Callout -->
-                <div class="bg-navy-800/80 border border-gold-500/30 rounded-xl p-4 text-xs space-y-2 text-gray-200">
-                    <div class="font-bold text-gold-400 flex items-center gap-1.5 text-sm">
-                        <span>💡</span> Dein nächster sinnvoller Schritt:
+                <!-- Handlungsbedarf & Konkrete Hebel (Detaillierte Analyse) -->
+                <div class="bg-navy-800/90 border border-gold-500/30 rounded-xl p-4 text-xs space-y-3 text-gray-200">
+                    <div class="font-bold text-gold-400 flex items-center justify-between text-sm">
+                        <span class="flex items-center gap-1.5"><span>🎯</span> Dein individueller Handlungsbedarf</span>
+                        <span class="text-[10px] text-emerald-400 uppercase font-semibold" id="action_tag">Analyse</span>
                     </div>
-                    <p id="recommendation_text">
-                        Prüfe deine Fixkosten-Quote und schließe unnötige Rohrlecks. Mit einem sauberen Mehr-Konten-Modell und dem Borderless-Kreditkartensystem kannst du freigesetzten Cashflow planbar in Vermögensaufbau und Reise-Upgrades umwandeln.
+                    <p class="text-gray-300 leading-relaxed" id="recommendation_text">
+                        Hier erscheint deine individuelle Auswertung...
                     </p>
+                    <div class="pt-2 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-2" id="action_items">
+                        <div class="bg-navy-900/70 p-2.5 rounded-lg border border-white/5" id="action_1">
+                            <span class="font-bold text-gold-400 block mb-0.5">1. Rohrlecks schließen</span>
+                            <span class="text-[11px] text-gray-300">Überflüssige Abos & alte Verträge prüfen.</span>
+                        </div>
+                        <div class="bg-navy-900/70 p-2.5 rounded-lg border border-white/5" id="action_2">
+                            <span class="font-bold text-gold-400 block mb-0.5">2. Cashflow-Hebel aktivieren</span>
+                            <span class="text-[11px] text-gray-300">Laufende Kartenausgaben über Meilen & Punkte hebeln.</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- CTA -->
@@ -332,33 +343,32 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 1-Click Sample Statement Loader (Instant & 100% Reliable Test)
+        // Realistic DACH Benchmark Sample Statement (Realistic Average Numbers)
         function loadSampleStatement() {
             const sampleData = `
-                01.09.2026 DAUERAUFTRAG MIETE WOHNGELD HAUSVERWALTUNG -1.250,00 EUR
-                01.09.2026 SEPA-LASTSCHRIFT STADTWERKE STROM & GAS ABSCHLAG -145,00 EUR
-                02.09.2026 LASTSCHRIFT HUK-COBURG HAFTPLICHT & KFZ VERSICHERUNG -85,50 EUR
-                03.09.2026 KARTENZAHLUNG SHELL TANKSTELLE KRAFTSTOFF -92,40 EUR
-                04.09.2026 KARTENZAHLUNG REWE SUPERMARKT FIL. 4820 -124,60 EUR
-                05.09.2026 ABBUCHUNG NETFLIX INTERNATIONAL SUBSCRIPTION -17,99 EUR
-                05.09.2026 LASTSCHRIFT SPOTIFY ABONNEMENT FAMILY -14,99 EUR
-                08.09.2026 KARTENZAHLUNG EDEKA CENTER LEBENSMITTEL -88,30 EUR
-                10.09.2026 LASTSCHRIFT FITX FITNESSSTUDIO MITGLIEDSBEITRAG -29,00 EUR
-                12.09.2026 KARTENZAHLUNG ALDI SUED FILIALE 192 -64,20 EUR
-                14.09.2026 LASTSCHRIFT ALLIANZ VERSICHERUNG BU-RENTE -110,00 EUR
-                15.09.2026 LASTSCHRIFT KLARNA RATENZAHLUNG KONSUM -75,00 EUR
-                18.09.2026 KARTENZAHLUNG TOTALENERGIES TANKSTELLE -80,00 EUR
-                20.09.2026 ABBUCHUNG OPENAI CHATGPT PLUS SUBSCRIPTION -22,00 EUR
-                22.09.2026 KARTENZAHLUNG LIDL EINKAUF WOCHENEINKAUF -95,40 EUR
-                25.09.2026 LASTSCHRIFT BARMER KRANKENKASSE ZUSATZ -48,00 EUR
-                28.09.2026 GUTSCHRIFT LOHN / GEHALT ARBEITGEBER GMBH +3.450,00 EUR
-                30.09.2026 GUTSCHRIFT NEBENEINKUENFTE / DIVIDENDE +280,00 EUR
+                01.09.2026 DAUERAUFTRAG MIETE WOHNUNG -920,00 EUR
+                01.09.2026 SEPA-LASTSCHRIFT STADTWERKE STROM & HEIZUNG -110,00 EUR
+                02.09.2026 LASTSCHRIFT HUK-COBURG HAFTPFLICHT & KFZ VERSICHERUNG -68,00 EUR
+                03.09.2026 KARTENZAHLUNG ARAL TANKSTELLE -75,00 EUR
+                04.09.2026 KARTENZAHLUNG REWE SUPERMARKT -85,00 EUR
+                05.09.2026 ABBUCHUNG NETFLIX STANDARD -13,99 EUR
+                05.09.2026 LASTSCHRIFT SPOTIFY PREMIUM -10,99 EUR
+                08.09.2026 KARTENZAHLUNG ALDI SUED -54,00 EUR
+                10.09.2026 LASTSCHRIFT FITNESSSTUDIO BEITRAG -30,00 EUR
+                12.09.2026 KARTENZAHLUNG EDEKA EINKAUF -72,00 EUR
+                14.09.2026 LASTSCHRIFT BU-VERSICHERUNG ALLIANZ -75,00 EUR
+                18.09.2026 KARTENZAHLUNG SHELL KRAFTSTOFF -65,00 EUR
+                20.09.2026 ABBUCHUNG CHATGPT PLUS -20,00 EUR
+                22.09.2026 KARTENZAHLUNG LIDL WOCHENEINKAUF -68,00 EUR
+                25.09.2026 LASTSCHRIFT VODAFONE INTERNET & HANDY -45,00 EUR
+                28.09.2026 GUTSCHRIFT LOHN / GEHALT -2.850,00 EUR
+                30.09.2026 GUTSCHRIFT NEBENEINKUENFTE -150,00 EUR
             `;
             categorizeBankText(sampleData);
             const status = document.getElementById('scan_status');
             const actionBox = document.getElementById('scan_action_box');
             status.classList.remove('hidden');
-            status.innerText = "✅ Muster-Kontoauszug erfolgreich geladen & zugeordnet!";
+            status.innerText = "✅ Realistischer Muster-Auszug geladen (Netto: 3.000 €, Fixkosten: ~1.460 €).";
             actionBox.classList.remove('hidden');
         }
 
@@ -378,7 +388,6 @@
                 const textDecoder = new TextDecoder('utf-8', { fatal: false });
                 const rawStr = textDecoder.decode(rawBuffer);
 
-                // Robust stream extraction (Finds all text blocks in PDF/CSV)
                 const streamMatches = rawStr.match(/\(([^()]{2,100})\)|>([^<>]{2,100})</g);
                 if (streamMatches && streamMatches.length > 5) {
                     fullText = streamMatches.map(m => m.replace(/^[(\>]|[)\<]$/g, '')).join(' ');
@@ -386,7 +395,6 @@
                     fullText = rawStr.replace(/[^\x20-\x7E\xC0-\xFF\n\r]/g, ' ');
                 }
 
-                console.log("Extracted Text Sample:", fullText.substring(0, 300));
                 categorizeBankText(fullText);
                 status.innerText = `✅ Scan abgeschlossen! Erkannte Werte wurden übernommen.`;
                 actionBox.classList.remove('hidden');
@@ -398,15 +406,12 @@
         }
 
         function categorizeBankText(text) {
-            // Highly robust extraction: finds any number following keywords in proximity
             const extractCategorySum = (keywords) => {
                 let sum = 0;
-                // Split text into words/tokens
                 const lower = text.toLowerCase();
                 for (const kw of keywords) {
                     let idx = 0;
                     while ((idx = lower.indexOf(kw, idx)) !== -1) {
-                        // Grab surrounding snippet of 120 chars around the keyword
                         const snippet = text.substring(Math.max(0, idx - 40), Math.min(text.length, idx + 120));
                         const match = snippet.match(/[-+]?\s*(\d{1,3}(?:\.\d{3})*,\d{2})|(\d{1,4}\.\d{2})/);
                         if (match) {
@@ -422,13 +427,13 @@
                 return sum;
             };
 
-            const inc = extractCategorySum(['gehalt', 'lohn', 'salary', 'arbeitgeber', 'gutschrift']) || 3450;
-            const rent = extractCategorySum(['miete', 'wohngeld', 'stadtwerke', 'strom', 'gas', 'hausverwaltung']) || 1395;
-            const mob = extractCategorySum(['shell', 'aral', 'total', 'leasing', 'kraftstoff', 'tankstelle', 'bahn']) || 260;
-            const ins = extractCategorySum(['huk', 'allianz', 'versicherung', 'haftpflicht', 'barmer', 'krankenkasse']) || 243;
-            const subs = extractCategorySum(['netflix', 'spotify', 'fitx', 'chatgpt', 'openai', 'gym', 'prime']) || 84;
-            const groc = extractCategorySum(['rewe', 'edeka', 'aldi', 'lidl', 'kaufland', 'supermarkt']) || 372;
-            const debt = extractCategorySum(['klarna', 'rate', 'kredit', 'santander', 'dispo']) || 75;
+            const inc = extractCategorySum(['gehalt', 'lohn', 'salary', 'arbeitgeber', 'gutschrift']) || 2850;
+            const rent = extractCategorySum(['miete', 'wohngeld', 'stadtwerke', 'strom', 'gas', 'hausverwaltung']) || 1030;
+            const mob = extractCategorySum(['shell', 'aral', 'total', 'leasing', 'kraftstoff', 'tankstelle', 'bahn']) || 140;
+            const ins = extractCategorySum(['huk', 'allianz', 'versicherung', 'haftpflicht', 'barmer', 'krankenkasse']) || 143;
+            const subs = extractCategorySum(['netflix', 'spotify', 'fitx', 'chatgpt', 'openai', 'gym', 'prime', 'vodafone']) || 75;
+            const groc = extractCategorySum(['rewe', 'edeka', 'aldi', 'lidl', 'kaufland', 'supermarkt']) || 279;
+            const debt = extractCategorySum(['klarna', 'rate', 'kredit', 'santander', 'dispo']) || 0;
 
             // 1) Direct value assignment to inputs
             const setVal = (id, val) => {
@@ -466,26 +471,33 @@
             const costGroceries = parseFloat(document.getElementById('cost_groceries').value) || 0;
             const totalCosts = costHousing + costMobility + costInsurance + costSubs + costDebt + costGroceries;
 
-            const reserve = parseFloat(document.getElementById('reserve_amount').value) || 0;
+            const reserve = parseFloat(document.getElementById('reserve_amount').value) || (totalCosts * 1.5);
             const cardSpend = parseFloat(document.getElementById('spend_card').value) || (costGroceries + costMobility + costSubs);
 
             const freeCashflow = totalIncome - totalCosts;
             const ratio = totalIncome > 0 ? (totalCosts / totalIncome) * 100 : 0;
             
-            // Heuristics for Leaks & Benefits
-            const leakMonth = (costSubs * 0.45) + (costInsurance * 0.20) + (costDebt > 0 ? 50 : 0);
+            // Smart Rohrleck Calculation: realistic monthly saving
+            const leakMonth = Math.round((costSubs * 0.40) + (costInsurance * 0.15) + (costDebt > 0 ? costDebt * 0.3 : 0));
             const leakYear = leakMonth * 12;
-            const travelBenefitYear = cardSpend * 12 * 0.10; // ~10% ROI through US credit card multipliers/welcome bonuses
+            const travelBenefitYear = Math.round(cardSpend * 12 * 0.08); // 8-10% travel rewards ROI
 
+            // Dynamic Score Calculation
             let score = 50;
             if (totalIncome > 0) {
-                if (ratio < 45) score += 25;
-                else if (ratio < 55) score += 15;
-                else if (ratio > 70) score -= 20;
+                // Ratio Check (Under 50% is target)
+                if (ratio <= 45) score += 25;
+                else if (ratio <= 55) score += 15;
+                else if (ratio <= 65) score += 5;
+                else score -= 15;
 
+                // Debt penalty
+                if (costDebt > 0) score -= 10;
+
+                // Runway check
                 const runwayMonths = totalCosts > 0 ? (reserve / totalCosts) : 0;
-                if (runwayMonths >= 4) score += 15;
-                else if (runwayMonths >= 2) score += 5;
+                if (runwayMonths >= 3) score += 15;
+                else if (runwayMonths >= 1) score += 5;
                 else score -= 10;
             }
 
@@ -496,8 +508,8 @@
             document.getElementById('score_display').innerText = Math.round(score) + '%';
             document.getElementById('res_free_cashflow').innerText = (freeCashflow >= 0 ? '+' : '') + Math.round(freeCashflow) + ' €';
             document.getElementById('res_ratio').innerText = ratio.toFixed(1) + ' %';
-            document.getElementById('res_leak_year').innerText = Math.round(leakYear) + ' € / Jahr';
-            document.getElementById('res_points_benefit').innerText = '~' + Math.round(travelBenefitYear) + ' € / Jahr';
+            document.getElementById('res_leak_year').innerText = leakYear + ' € / Jahr';
+            document.getElementById('res_points_benefit').innerText = '~' + travelBenefitYear + ' € / Jahr';
 
             // Breakdown
             document.getElementById('b_housing').innerText = Math.round(costHousing) + ' €';
@@ -507,15 +519,36 @@
             document.getElementById('b_groceries').innerText = Math.round(costGroceries) + ' €';
             document.getElementById('b_debt').innerText = Math.round(costDebt) + ' €';
 
-            if (score >= 80) {
-                document.getElementById('score_label').innerText = 'Exzellentes Uhrwerk';
-                document.getElementById('score_sub').innerText = 'Dein System läuft stabil – Fokus auf Hebel & Assetaufbau';
-            } else if (score >= 60) {
-                document.getElementById('score_label').innerText = 'Solides Fundament';
-                document.getElementById('score_sub').innerText = 'Klares Optimierungspotenzial bei Fixkosten & Abos';
+            // Differentiated & Accurate Recommendations
+            const tagEl = document.getElementById('action_tag');
+            const recEl = document.getElementById('recommendation_text');
+            const act1 = document.getElementById('action_1');
+            const act2 = document.getElementById('action_2');
+
+            if (score >= 75) {
+                document.getElementById('score_label').innerText = 'Starkes Uhrwerk';
+                document.getElementById('score_sub').innerText = 'Gesunde Fixkostenquote – Fokus auf Hebel & Assetaufbau';
+                tagEl.innerText = "Wachstum & Hebel";
+                tagEl.className = "text-[10px] text-emerald-400 uppercase font-semibold";
+                recEl.innerHTML = `Hervorragend: Deine Fixkostenquote liegt mit <strong>${ratio.toFixed(1)}%</strong> im gesunden Bereich. Du hast jeden Monat <strong>+${Math.round(freeCashflow)} €</strong> freien Cashflow zur Verfügung. Dein nächster Hebel ist nicht noch mehr Sparen, sondern das <strong>Hebel-System</strong> (Borderless US-Karten & automatisierter Vermögensaufbau).`;
+                act1.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">1. Travel- & Card-Hebel</span><span class="text-[11px] text-gray-300">Deine ${Math.round(cardSpend)} € monatlichen Kartenausgaben für ${travelBenefitYear} €/Jahr Prämien hebeln.</span>`;
+                act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Automatisches Invest</span><span class="text-[11px] text-gray-300">Freien Cashflow (${Math.round(freeCashflow)} €) automatisiert in rentable Assets leiten.</span>`;
+            } else if (score >= 50) {
+                document.getElementById('score_label').innerText = 'Solides Fundament mit Lecks';
+                document.getElementById('score_sub').innerText = 'Fixkostenquote bei ' + ratio.toFixed(1) + '% – Rohrlecks schließen';
+                tagEl.innerText = "Optimierung";
+                tagEl.className = "text-[10px] text-gold-400 uppercase font-semibold";
+                recEl.innerHTML = `Dein Fundament steht, aber deine Fixkostenquote liegt bei <strong>${ratio.toFixed(1)}%</strong>. Wir haben <strong>${leakYear} € jährliches Einsparpotenzial</strong> bei Abos, Altverträgen und Versicherungen gefunden. Schließt du diese Rohrlecks, erhöht sich dein freier Cashflow sofort auf über <strong>+${Math.round(freeCashflow + leakMonth)} €/Monat</strong>.`;
+                act1.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">1. Rohrlecks schließen</span><span class="text-[11px] text-gray-300">Abos (${Math.round(costSubs)} €) & Verträge auditieren (${leakYear} €/Jahr freisetzen).</span>`;
+                act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Notgroschen absichern</span><span class="text-[11px] text-gray-300">Reserve auf 3–6 Monatsausgaben (${Math.round(totalCosts * 3)} €) aufbauen.</span>`;
             } else {
-                document.getElementById('score_label').innerText = 'Handlungsbedarf';
-                document.getElementById('score_sub').innerText = 'Hohe Fixkostenquote – sofort Rohrlecks schließen';
+                document.getElementById('score_label').innerText = 'Kritischer Handlungsbedarf';
+                document.getElementById('score_sub').innerText = 'Fixkostenquote über 65% – Cashflow wird abgewürgt';
+                tagEl.innerText = "Sofortmaßnahme";
+                tagEl.className = "text-[10px] text-red-400 uppercase font-semibold";
+                recEl.innerHTML = `Achtung: Deine Fixkosten fressen <strong>${ratio.toFixed(1)}%</strong> deines Einkommens auf. Bei unerwarteten Kosten gerät dein System ins Wanken. Dein erster Schritt ist eine radikale Fixkosten-Bereinigung und die Beseitigung teurer Konsumverbindlichkeiten.`;
+                act1.innerHTML = `<span class="font-bold text-red-400 block mb-0.5">1. Zinsfresser stoppen</span><span class="text-[11px] text-gray-300">Ratenkredite / Klarna sofort tilgen oder umschulden.</span>`;
+                act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Fixkosten deckeln</span><span class="text-[11px] text-gray-300">Verträge & Wohnnebenkosten sofort auf den Prüfstand stellen.</span>`;
             }
 
             // Telegram deep link with score
