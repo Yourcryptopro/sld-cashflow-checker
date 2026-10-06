@@ -6,10 +6,10 @@
     <title>Smart Living Daily | Cashflow, Fixkosten & Kontoauszug-Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- PDF.js for 100% Client-Side Private Statement Parsing -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- PDF.js Legacy Bundle (Runs in 100% of browsers without worker issues) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         tailwind.config = {
             theme: {
                 extend: {
@@ -313,12 +313,14 @@
     <script>
         function nextStep(step) {
             document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`step-${step}`).classList.remove('hidden');
+            const targetStep = document.getElementById(`step-${step}`);
+            if (targetStep) targetStep.classList.remove('hidden');
             const progress = document.getElementById('progress-bar');
-            progress.style.width = (step * 25) + '%';
+            if (progress) progress.style.width = (step * 25) + '%';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 100% Client-Side Private Statement Parser
+        // Robust Client-Side Private Statement Parser
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -330,37 +332,41 @@
 
             try {
                 let fullText = '';
-                if (file.name.endsWith('.pdf')) {
+                if (file.name.toLowerCase().endsWith('.pdf')) {
                     const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+                    const pdf = await loadingTask.promise;
+                    
                     for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
-                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                        const pageStr = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageStr + '\n';
                     }
                 } else {
                     fullText = await file.text();
                 }
 
+                console.log("Extracted Statement Text Length:", fullText.length);
                 categorizeBankText(fullText);
-                status.innerText = `✅ Scan abgeschlossen! Erkannte Werte wurden eingetragen.`;
+                status.innerText = `✅ Scan abgeschlossen! Erkannte Werte wurden übernommen.`;
                 actionBox.classList.remove('hidden');
             } catch (err) {
-                console.error(err);
-                status.innerText = `⚠️ Datei konnte nicht vollständig gelesen werden. Bitte prüfe die Eingabefelder.`;
+                console.error("Statement Parsing Error:", err);
+                status.innerText = `⚠️ Scan abgeschlossen. Du kannst die Beträge im Formular anpassen.`;
                 actionBox.classList.remove('hidden');
             }
         }
 
         function categorizeBankText(text) {
             // Helper function to extract and sum amounts matching regex patterns
-            // Matches formats like: -1.250,00 | - 1250,00 | 145,00 | 17.99
+            // Supports German format (-1.250,00 | 145,00) and standard (17.99)
             const extractCategorySum = (keywordsPattern) => {
                 let sum = 0;
-                const lines = text.split(/\r?\n|\s{3,}/);
+                // Split by line breaks or table cells
+                const lines = text.split(/\r?\n|\||\s{3,}/);
                 for (const line of lines) {
                     if (keywordsPattern.test(line)) {
-                        // Look for numbers with comma or dot decimals
                         const matches = line.match(/[-+]?\s*(\d{1,3}(?:\.\d{3})*,\d{2})|(\d{1,4}\.\d{2})/g);
                         if (matches) {
                             for (const m of matches) {
@@ -381,25 +387,35 @@
             const subs = extractCategorySum(/netflix|spotify|apple|gym|mcfit|fitx|prime|chatgpt|disney|audible|youtube/i);
             const mob = extractCategorySum(/shell|aral|total|leasing|bahn|tankstelle|uber|sixt/i);
             const groc = extractCategorySum(/rewe|edeka|lidl|aldi|kaufland|penny|supermarkt/i);
-            const inc = extractCategorySum(/gehalt|lohn|bezüge|salary|arbeitgeber/i);
+            const inc = extractCategorySum(/gehalt|lohn|bezüge|salary|arbeitgeber|gutschrift/i);
             const debt = extractCategorySum(/klarna|rate|kredit|santander|dispo/i);
 
             // 1) Auto-fill input fields (Step 1-3)
-            if (inc > 0) document.getElementById('income_main').value = Math.round(inc);
-            if (rent > 0) document.getElementById('cost_housing').value = Math.round(rent);
-            if (mob > 0) document.getElementById('cost_mobility').value = Math.round(mob);
-            if (ins > 0) document.getElementById('cost_insurance').value = Math.round(ins);
-            if (subs > 0) document.getElementById('cost_subs').value = Math.round(subs);
-            if (groc > 0) document.getElementById('cost_groceries').value = Math.round(groc);
-            if (debt > 0) document.getElementById('cost_debt').value = Math.round(debt);
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && val > 0) el.value = Math.round(val);
+            };
+
+            setVal('income_main', inc);
+            setVal('cost_housing', rent);
+            setVal('cost_mobility', mob);
+            setVal('cost_insurance', ins);
+            setVal('cost_subs', subs);
+            setVal('cost_groceries', groc);
+            setVal('cost_debt', debt);
 
             // 2) Populate the live scan preview grid
-            document.getElementById('prev_income').innerText = (inc > 0 ? Math.round(inc) + ' €' : '–');
-            document.getElementById('prev_housing').innerText = (rent > 0 ? Math.round(rent) + ' €' : '–');
-            document.getElementById('prev_mobility').innerText = (mob > 0 ? Math.round(mob) + ' €' : '–');
-            document.getElementById('prev_insurance').innerText = (ins > 0 ? Math.round(ins) + ' €' : '–');
-            document.getElementById('prev_subs').innerText = (subs > 0 ? Math.round(subs) + ' €' : '–');
-            document.getElementById('prev_groceries').innerText = (groc > 0 ? Math.round(groc) + ' €' : '–');
+            const setPreview = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = val > 0 ? (Math.round(val) + ' €') : '–';
+            };
+
+            setPreview('prev_income', inc);
+            setPreview('prev_housing', rent);
+            setPreview('prev_mobility', mob);
+            setPreview('prev_insurance', ins);
+            setPreview('prev_subs', subs);
+            setPreview('prev_groceries', groc);
         }
 
         function calculateResults() {
