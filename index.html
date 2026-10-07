@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Living Daily | Cashflow, Fixkosten & Kontoauszug-Scanner</title>
+    <title>Smart Living Daily | Multi-Konto Cashflow & Fixkosten-Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -53,13 +53,13 @@
     <main class="max-w-3xl mx-auto px-4 py-8 flex-1 w-full">
         <div class="text-center mb-8">
             <div class="inline-block px-3 py-1 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-400 text-xs font-semibold mb-3">
-                ✨ Interaktives Fixkosten- & Cashflow-Audit
+                ✨ Multi-Konto Fixkosten- & Cashflow-Audit
             </div>
             <h1 class="font-heading font-extrabold text-2xl md:text-4xl text-white mb-2">
                 Wie stabil läuft dein <span class="text-transparent bg-clip-text gold-gradient">Finanz-Uhrwerk?</span>
             </h1>
             <p class="text-gray-300 text-sm md:text-base max-w-xl mx-auto">
-                Lade deinen echten Kontoauszug (PDF / CSV) hoch oder trage deine Werte manuell ein. 100% lokal & privat in deinem Browser.
+                Lade mehrere Kontoauszüge gleichzeitig hoch (Girokonto, Kreditkarte, Tagesgeld), prüfe die Kontotypen und ergänze Bar-, PayPal-, Krypto- oder Drittzahlungen manuell.
             </p>
         </div>
 
@@ -71,69 +71,79 @@
                 <div id="progress-bar" class="gold-gradient h-full w-1/4 transition-all duration-300"></div>
             </div>
 
-            <!-- Upload Area (PDF & CSV) -->
+            <!-- Multi Upload Area -->
             <div id="upload-box" class="mb-6 p-5 rounded-xl border border-dashed border-gold-500/40 bg-navy-900/60 hover:bg-navy-900/90 transition-all text-center">
                 <div class="flex flex-col items-center justify-center gap-2">
-                    <div class="text-2xl">📄</div>
+                    <div class="text-2xl">🗂️</div>
                     <div class="text-xs font-bold text-gold-400 font-heading uppercase tracking-wider">
-                        Schritt 1: Kontoauszug hochladen (Automatische Erkennung)
+                        Schritt 1: Mehrere Kontoauszüge hochladen
                     </div>
                     <p class="text-[11px] text-gray-400 max-w-md">
-                        PDF oder CSV per Drag & Drop hier ablegen. Die erkannten Beträge werden sofort in deine Formularfelder übernommen.<br>
-                        <span class="text-emerald-400 font-semibold">🔒 100% Datenschutz:</span> Verbleibt lokal in deinem Browser.
+                        Wähle beliebig viele PDF- oder CSV-Auszüge aus (z. B. Girokonto + Kreditkarte + Tagesgeld).<br>
+                        <span class="text-emerald-400 font-semibold">🔒 100% Datenschutz:</span> Alles bleibt lokal in deinem Browser.
                     </p>
-                    <input type="file" id="statement_file" accept=".pdf,.csv,.txt" class="hidden" onchange="handleFileUpload(event)">
-                    <button onclick="document.getElementById('statement_file').click()" class="mt-2 px-5 py-2 rounded-lg gold-gradient text-navy-900 text-xs font-bold font-heading uppercase tracking-wider hover:opacity-95 shadow-lg shadow-gold-500/20 transition-all">
-                        📎 Eigenen Kontoauszug hochladen (PDF / CSV)
+                    <input type="file" id="statement_files" accept=".pdf,.csv,.txt" multiple class="hidden" onchange="handleMultiFileUpload(event)">
+                    <button onclick="document.getElementById('statement_files').click()" class="mt-2 px-5 py-2 rounded-lg gold-gradient text-navy-900 text-xs font-bold font-heading uppercase tracking-wider hover:opacity-95 shadow-lg shadow-gold-500/20 transition-all">
+                        📎 Mehrere Kontoauszüge auswählen
                     </button>
                     <div id="scan_status" class="text-xs text-emerald-400 font-medium hidden mt-2"></div>
                 </div>
             </div>
 
-            <!-- Scan Overview & Action Box (Visible immediately after upload) -->
-            <div id="scan_action_box" class="mb-6 p-5 rounded-xl border border-gold-500/40 bg-navy-900/90 hidden space-y-4">
+            <!-- File List with Account Type Filter -->
+            <div id="file_list_box" class="mb-6 p-5 rounded-xl border border-gold-500/40 bg-navy-900/90 hidden space-y-4">
                 <div class="flex items-center justify-between border-b border-gold-500/20 pb-2">
                     <div class="font-heading font-bold text-sm text-gold-400 flex items-center gap-2">
-                        <span>📊</span> Erkannte Kosten-Aufstellung aus deinem Auszug
+                        <span>📊</span> Hochgeladene Auszüge & Kontotyp-Zuordnung
                     </div>
                     <span class="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 font-semibold">100% Lokal</span>
                 </div>
-
-                <!-- Live Mini-Grid of Detected Values -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs text-gray-200">
-                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
-                        <span class="block text-[10px] text-gray-400 uppercase">Einnahmen Netto</span>
-                        <span class="font-bold text-emerald-400 text-sm" id="prev_income">0 €</span>
-                    </div>
-                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
-                        <span class="block text-[10px] text-gray-400 uppercase">Miete & Strom</span>
-                        <span class="font-bold text-white text-sm" id="prev_housing">0 €</span>
-                    </div>
-                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
-                        <span class="block text-[10px] text-gray-400 uppercase">Mobilität / Sprit</span>
-                        <span class="font-bold text-white text-sm" id="prev_mobility">0 €</span>
-                    </div>
-                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
-                        <span class="block text-[10px] text-gray-400 uppercase">Versicherungen</span>
-                        <span class="font-bold text-white text-sm" id="prev_insurance">0 €</span>
-                    </div>
-                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
-                        <span class="block text-[10px] text-gray-400 uppercase">Abos & Digital</span>
-                        <span class="font-bold text-gold-400 text-sm" id="prev_subs">0 €</span>
-                    </div>
-                    <div class="bg-navy-800/80 p-2.5 rounded-lg border border-white/5">
-                        <span class="block text-[10px] text-gray-400 uppercase">Lebensmittel</span>
-                        <span class="font-bold text-white text-sm" id="prev_groceries">0 €</span>
-                    </div>
-                </div>
-
+                <div id="file_entries" class="space-y-3"></div>
                 <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
-                    <button onclick="calculateResults()" class="flex-1 gold-gradient text-navy-900 font-heading font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-gold-500/20 hover:opacity-95 transition-all">
-                        ⚡ Direkt auswerten
+                    <button onclick="aggregateAndFill()" class="flex-1 gold-gradient text-navy-900 font-heading font-bold py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-gold-500/20 hover:opacity-95 transition-all">
+                        ⚡ Alle Konten zusammen auswerten
                     </button>
                     <button onclick="nextStep(1)" class="flex-1 border border-gold-500/50 text-gold-400 font-heading font-semibold py-3 rounded-xl text-xs hover:bg-gold-500/10 transition-all">
-                        ✏️ Werte prüfen & im Formular anpassen
+                        ✏️ Werte prüfen & anpassen
                     </button>
+                </div>
+            </div>
+
+            <!-- Manual Additions (Bar, PayPal, Krypto, Dritte) -->
+            <div id="manual_box" class="mb-6 p-5 rounded-xl border border-gold-500/40 bg-navy-900/90 hidden space-y-4">
+                <div class="font-heading font-bold text-sm text-gold-400 flex items-center gap-2">
+                    <span>➕</span> Manuelle Ergänzungen (nicht im Auszug erfasst)
+                </div>
+                <p class="text-[11px] text-gray-400">Manche Zahlungen laufen nicht über dein Girokonto oder deine Karte. Hake an, was auf dich zutrifft, und ergänze den monatlichen Betrag.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="bg-navy-800/80 p-3 rounded-lg border border-white/5">
+                        <label class="flex items-center gap-2 mb-2">
+                            <input type="checkbox" id="chk_cash" onchange="toggleManual('cash')" class="accent-gold-500">
+                            <span class="font-semibold text-white">💵 Barzahlungen</span>
+                        </label>
+                        <input type="number" id="manual_cash" placeholder="z. B. 150 € / Monat" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-lg px-3 py-2 text-white hidden">
+                    </div>
+                    <div class="bg-navy-800/80 p-3 rounded-lg border border-white/5">
+                        <label class="flex items-center gap-2 mb-2">
+                            <input type="checkbox" id="chk_paypal" onchange="toggleManual('paypal')" class="accent-gold-500">
+                            <span class="font-semibold text-white">🅿️ PayPal-Zahlungen</span>
+                        </label>
+                        <input type="number" id="manual_paypal" placeholder="z. B. 80 € / Monat" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-lg px-3 py-2 text-white hidden">
+                    </div>
+                    <div class="bg-navy-800/80 p-3 rounded-lg border border-white/5">
+                        <label class="flex items-center gap-2 mb-2">
+                            <input type="checkbox" id="chk_crypto" onchange="toggleManual('crypto')" class="accent-gold-500">
+                            <span class="font-semibold text-white">₿ Krypto-Zahlungen</span>
+                        </label>
+                        <input type="number" id="manual_crypto" placeholder="z. B. 50 € / Monat" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-lg px-3 py-2 text-white hidden">
+                    </div>
+                    <div class="bg-navy-800/80 p-3 rounded-lg border border-white/5">
+                        <label class="flex items-center gap-2 mb-2">
+                            <input type="checkbox" id="chk_third" onchange="toggleManual('third')" class="accent-gold-500">
+                            <span class="font-semibold text-white">👥 Zahlungen über 3. Personen</span>
+                        </label>
+                        <input type="number" id="manual_third" placeholder="z. B. 120 € / Monat" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-lg px-3 py-2 text-white hidden">
+                    </div>
                 </div>
             </div>
 
@@ -189,6 +199,10 @@
                         <label class="block text-xs text-gray-300 mb-1">Lebensmittel & Haushalt (€/Monat)</label>
                         <input type="number" id="cost_groceries" placeholder="0" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-gold-400">
                     </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-300 mb-1">Sonstige manuelle Ergänzungen (Bar, PayPal, Krypto, 3. Personen) (€)</label>
+                    <input type="number" id="cost_other" placeholder="0" class="w-full bg-navy-900/90 border border-gold-500/30 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-gold-400">
                 </div>
                 <div class="flex gap-3">
                     <button onclick="nextStep(1)" class="w-1/3 border border-white/20 text-gray-300 font-semibold py-3.5 rounded-xl hover:bg-white/5 transition-all text-sm">
@@ -273,10 +287,11 @@
                         <div>📱 Abos & Digitales: <span class="font-semibold text-white" id="b_subs">0 €</span></div>
                         <div>🛒 Lebensmittel: <span class="font-semibold text-white" id="b_groceries">0 €</span></div>
                         <div>💳 Kredite/Raten: <span class="font-semibold text-white" id="b_debt">0 €</span></div>
+                        <div>➕ Manuelle Ergänzungen: <span class="font-semibold text-white" id="b_other">0 €</span></div>
                     </div>
                 </div>
 
-                <!-- Handlungsbedarf & Konkrete Hebel (Detaillierte Analyse) -->
+                <!-- Handlungsbedarf & Konkrete Hebel -->
                 <div class="bg-navy-800/90 border border-gold-500/30 rounded-xl p-4 text-xs space-y-3 text-gray-200">
                     <div class="font-bold text-gold-400 flex items-center justify-between text-sm">
                         <span class="flex items-center gap-1.5"><span>🎯</span> Dein individueller Handlungsbedarf</span>
@@ -319,6 +334,8 @@
 
     <!-- Logic -->
     <script>
+        let uploadedFiles = [];
+
         function nextStep(step) {
             document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
             const targetStep = document.getElementById(`step-${step}`);
@@ -328,41 +345,69 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 100% Reliable Client-Side Stream & CSV Parser
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const status = document.getElementById('scan_status');
-            const actionBox = document.getElementById('scan_action_box');
-            status.classList.remove('hidden');
-            status.innerText = `⏳ Lese ${file.name}...`;
-
-            try {
-                let fullText = '';
-                const rawBuffer = await file.arrayBuffer();
-                const textDecoder = new TextDecoder('utf-8', { fatal: false });
-                const rawStr = textDecoder.decode(rawBuffer);
-
-                // Extract all textual streams from PDF or plain text
-                const streamMatches = rawStr.match(/\(([^()]{2,100})\)|>([^<>]{2,100})</g);
-                if (streamMatches && streamMatches.length > 5) {
-                    fullText = streamMatches.map(m => m.replace(/^[(\>]|[)\<]$/g, '')).join(' ');
-                } else {
-                    fullText = rawStr.replace(/[^\x20-\x7E\xC0-\xFF\n\r]/g, ' ');
-                }
-
-                categorizeBankText(fullText);
-                status.innerText = `✅ Scan abgeschlossen! Erkannte Werte wurden übernommen.`;
-                actionBox.classList.remove('hidden');
-            } catch (err) {
-                console.error("Statement Parsing Error:", err);
-                status.innerText = `⚠️ Datei geladen. Du kannst die Beträge im Formular anpassen.`;
-                actionBox.classList.remove('hidden');
-            }
+        function toggleManual(type) {
+            const chk = document.getElementById(`chk_${type}`);
+            const input = document.getElementById(`manual_${type}`);
+            if (chk && input) input.classList.toggle('hidden', !chk.checked);
         }
 
-        function categorizeBankText(text) {
+        async function handleMultiFileUpload(event) {
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+
+            const status = document.getElementById('scan_status');
+            const listBox = document.getElementById('file_list_box');
+            const manualBox = document.getElementById('manual_box');
+            const entries = document.getElementById('file_entries');
+
+            status.classList.remove('hidden');
+            status.innerText = `⏳ Lese ${files.length} Auszug(e)...`;
+            entries.innerHTML = '';
+            uploadedFiles = [];
+
+            for (const file of files) {
+                try {
+                    const rawBuffer = await file.arrayBuffer();
+                    const textDecoder = new TextDecoder('utf-8', { fatal: false });
+                    const rawStr = textDecoder.decode(rawBuffer);
+
+                    let fullText = '';
+                    const streamMatches = rawStr.match(/\(([^()]{2,100})\)|>([^<>]{2,100})</g);
+                    if (streamMatches && streamMatches.length > 5) {
+                        fullText = streamMatches.map(m => m.replace(/^[(\>]|[)\<]$/g, '')).join(' ');
+                    } else {
+                        fullText = rawStr.replace(/[^\x20-\x7E\xC0-\xFF\n\r]/g, ' ');
+                    }
+
+                    const parsed = parseStatement(fullText);
+                    uploadedFiles.push({ name: file.name, type: 'checking', data: parsed });
+
+                    const row = document.createElement('div');
+                    row.className = 'bg-navy-800/80 p-3 rounded-lg border border-white/5';
+                    row.innerHTML = `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="text-xs font-semibold text-white truncate">📄 ${file.name}</div>
+                                <div class="text-[10px] text-gray-400">Einnahmen: ${Math.round(parsed.income)} € · Kosten: ${Math.round(parsed.totalCosts)} €</div>
+                            </div>
+                            <select class="acct-type bg-navy-900 border border-gold-500/30 rounded-lg px-2 py-1.5 text-xs text-white" data-file="${uploadedFiles.length - 1}">
+                                <option value="checking">Girokonto</option>
+                                <option value="credit">Kreditkarte</option>
+                                <option value="savings">Tagesgeld / Broker</option>
+                            </select>
+                        </div>`;
+                    entries.appendChild(row);
+                } catch (err) {
+                    console.error('Parse error', err);
+                }
+            }
+
+            status.innerText = `✅ ${uploadedFiles.length} Auszug(e) eingelesen. Kontotyp prüfen & zusammen auswerten.`;
+            listBox.classList.remove('hidden');
+            manualBox.classList.remove('hidden');
+        }
+
+        function parseStatement(text) {
             const extractCategorySum = (keywords) => {
                 let sum = 0;
                 const lower = text.toLowerCase();
@@ -374,9 +419,7 @@
                         if (match) {
                             const clean = match[0].replace(/[+\-\sEUR]/g, '').replace('.', '').replace(',', '.');
                             const val = parseFloat(clean);
-                            if (!isNaN(val) && val > 0 && val < 10000) {
-                                sum += val;
-                            }
+                            if (!isNaN(val) && val > 0 && val < 10000) sum += val;
                         }
                         idx += kw.length + 10;
                     }
@@ -384,35 +427,71 @@
                 return sum;
             };
 
-            const inc = extractCategorySum(['gehalt', 'lohn', 'salary', 'arbeitgeber', 'gutschrift']) || 2850;
-            const rent = extractCategorySum(['miete', 'wohngeld', 'stadtwerke', 'strom', 'gas', 'hausverwaltung']) || 1030;
-            const mob = extractCategorySum(['shell', 'aral', 'total', 'leasing', 'kraftstoff', 'tankstelle', 'bahn']) || 140;
-            const ins = extractCategorySum(['huk', 'allianz', 'versicherung', 'haftpflicht', 'barmer', 'krankenkasse']) || 143;
-            const subs = extractCategorySum(['netflix', 'spotify', 'fitx', 'chatgpt', 'openai', 'gym', 'prime', 'vodafone']) || 75;
-            const groc = extractCategorySum(['rewe', 'edeka', 'aldi', 'lidl', 'kaufland', 'supermarkt']) || 279;
-            const debt = extractCategorySum(['klarna', 'rate', 'kredit', 'santander', 'dispo']) || 0;
+            const income = extractCategorySum(['gehalt', 'lohn', 'salary', 'arbeitgeber', 'gutschrift']);
+            const housing = extractCategorySum(['miete', 'wohngeld', 'stadtwerke', 'strom', 'gas', 'hausverwaltung']);
+            const mobility = extractCategorySum(['shell', 'aral', 'total', 'leasing', 'kraftstoff', 'tankstelle', 'bahn']);
+            const insurance = extractCategorySum(['huk', 'allianz', 'versicherung', 'haftpflicht', 'barmer', 'krankenkasse']);
+            const subs = extractCategorySum(['netflix', 'spotify', 'fitx', 'chatgpt', 'openai', 'gym', 'prime', 'vodafone']);
+            const groceries = extractCategorySum(['rewe', 'edeka', 'aldi', 'lidl', 'kaufland', 'supermarkt']);
+            const debt = extractCategorySum(['klarna', 'rate', 'kredit', 'santander', 'dispo']);
 
-            // 1) Direct value assignment to inputs
+            return {
+                income, housing, mobility, insurance, subs, groceries, debt,
+                totalCosts: housing + mobility + insurance + subs + groceries + debt
+            };
+        }
+
+        function aggregateAndFill() {
+            let inc = 0, housing = 0, mobility = 0, insurance = 0, subs = 0, groceries = 0, debt = 0;
+            let cardSpendDetected = 0;
+
+            document.querySelectorAll('.acct-type').forEach(sel => {
+                const idx = parseInt(sel.dataset.file);
+                const f = uploadedFiles[idx];
+                if (!f) return;
+                const type = sel.value;
+                f.type = type;
+
+                if (type === 'savings') return; // Tagesgeld/Broker: keine Fixkosten doppelt zählen
+
+                inc += f.data.income;
+                housing += f.data.housing;
+                mobility += f.data.mobility;
+                insurance += f.data.insurance;
+                subs += f.data.subs;
+                groceries += f.data.groceries;
+                debt += f.data.debt;
+
+                if (type === 'credit') {
+                    cardSpendDetected += f.data.totalCosts;
+                }
+            });
+
+            // Manuelle Ergänzungen
+            let other = 0;
+            const addManual = (id) => {
+                const chk = document.getElementById(`chk_${id}`);
+                const input = document.getElementById(`manual_${id}`);
+                if (chk && chk.checked && input) other += parseFloat(input.value) || 0;
+            };
+            ['cash','paypal','crypto','third'].forEach(addManual);
+
             const setVal = (id, val) => {
                 const el = document.getElementById(id);
                 if (el) el.value = Math.round(val);
             };
 
             setVal('income_main', inc);
-            setVal('cost_housing', rent);
-            setVal('cost_mobility', mob);
-            setVal('cost_insurance', ins);
+            setVal('cost_housing', housing);
+            setVal('cost_mobility', mobility);
+            setVal('cost_insurance', insurance);
             setVal('cost_subs', subs);
-            setVal('cost_groceries', groc);
+            setVal('cost_groceries', groceries);
             setVal('cost_debt', debt);
+            setVal('cost_other', other);
+            if (cardSpendDetected > 0) setVal('spend_card', cardSpendDetected);
 
-            // 2) Populate Preview Grid
-            document.getElementById('prev_income').innerText = Math.round(inc) + ' €';
-            document.getElementById('prev_housing').innerText = Math.round(rent) + ' €';
-            document.getElementById('prev_mobility').innerText = Math.round(mob) + ' €';
-            document.getElementById('prev_insurance').innerText = Math.round(ins) + ' €';
-            document.getElementById('prev_subs').innerText = Math.round(subs) + ' €';
-            document.getElementById('prev_groceries').innerText = Math.round(groc) + ' €';
+            nextStep(1);
         }
 
         function calculateResults() {
@@ -426,7 +505,8 @@
             const costSubs = parseFloat(document.getElementById('cost_subs').value) || 0;
             const costDebt = parseFloat(document.getElementById('cost_debt').value) || 0;
             const costGroceries = parseFloat(document.getElementById('cost_groceries').value) || 0;
-            const totalCosts = costHousing + costMobility + costInsurance + costSubs + costDebt + costGroceries;
+            const costOther = parseFloat(document.getElementById('cost_other').value) || 0;
+            const totalCosts = costHousing + costMobility + costInsurance + costSubs + costDebt + costGroceries + costOther;
 
             const reserve = parseFloat(document.getElementById('reserve_amount').value) || (totalCosts * 1.5);
             const cardSpend = parseFloat(document.getElementById('spend_card').value) || (costGroceries + costMobility + costSubs);
@@ -434,49 +514,38 @@
             const freeCashflow = totalIncome - totalCosts;
             const ratio = totalIncome > 0 ? (totalCosts / totalIncome) * 100 : 0;
             
-            // Smart Rohrleck Calculation: realistic monthly saving
             const leakMonth = Math.round((costSubs * 0.40) + (costInsurance * 0.15) + (costDebt > 0 ? costDebt * 0.3 : 0));
             const leakYear = leakMonth * 12;
-            const travelBenefitYear = Math.round(cardSpend * 12 * 0.08); // 8-10% travel rewards ROI
+            const travelBenefitYear = Math.round(cardSpend * 12 * 0.08);
 
-            // Dynamic Score Calculation
             let score = 50;
             if (totalIncome > 0) {
-                // Ratio Check (Under 50% is target)
                 if (ratio <= 45) score += 25;
                 else if (ratio <= 55) score += 15;
                 else if (ratio <= 65) score += 5;
                 else score -= 15;
-
-                // Debt penalty
                 if (costDebt > 0) score -= 10;
-
-                // Runway check
                 const runwayMonths = totalCosts > 0 ? (reserve / totalCosts) : 0;
                 if (runwayMonths >= 3) score += 15;
                 else if (runwayMonths >= 1) score += 5;
                 else score -= 10;
             }
+            score = Math.min(98, Math.max(25, score));
 
-            if (score > 98) score = 98;
-            if (score < 25) score = 25;
-
-            // Render Results
             document.getElementById('score_display').innerText = Math.round(score) + '%';
             document.getElementById('res_free_cashflow').innerText = (freeCashflow >= 0 ? '+' : '') + Math.round(freeCashflow) + ' €';
             document.getElementById('res_ratio').innerText = ratio.toFixed(1) + ' %';
             document.getElementById('res_leak_year').innerText = leakYear + ' € / Jahr';
             document.getElementById('res_points_benefit').innerText = '~' + travelBenefitYear + ' € / Jahr';
 
-            // Breakdown
             document.getElementById('b_housing').innerText = Math.round(costHousing) + ' €';
             document.getElementById('b_mobility').innerText = Math.round(costMobility) + ' €';
             document.getElementById('b_insurance').innerText = Math.round(costInsurance) + ' €';
             document.getElementById('b_subs').innerText = Math.round(costSubs) + ' €';
             document.getElementById('b_groceries').innerText = Math.round(costGroceries) + ' €';
             document.getElementById('b_debt').innerText = Math.round(costDebt) + ' €';
+            document.getElementById('b_other').innerText = Math.round(costOther) + ' €';
 
-            // Differentiated & Accurate Recommendations
             const tagEl = document.getElementById('action_tag');
             const recEl = document.getElementById('recommendation_text');
             const act1 = document.getElementById('action_1');
@@ -487,7 +556,7 @@
                 document.getElementById('score_sub').innerText = 'Gesunde Fixkostenquote – Fokus auf Hebel & Assetaufbau';
                 tagEl.innerText = "Wachstum & Hebel";
                 tagEl.className = "text-[10px] text-emerald-400 uppercase font-semibold";
-                recEl.innerHTML = `Hervorragend: Deine Fixkostenquote liegt mit <strong>${ratio.toFixed(1)}%</strong> im gesunden Bereich. Du hast jeden Monat <strong>+${Math.round(freeCashflow)} €</strong> freien Cashflow zur Verfügung. Dein nächster Hebel ist nicht noch mehr Sparen, sondern das <strong>Hebel-System</strong> (Borderless US-Karten & automatisierter Vermögensaufbau).`;
+                recEl.innerHTML = `Hervorragend: Deine Fixkostenquote liegt mit <strong>${ratio.toFixed(1)}%</strong> im gesunden Bereich. Du hast jeden Monat <strong>+${Math.round(freeCashflow)} €</strong> freien Cashflow zur Verfügung. Dein nächster Hebel ist nicht noch mehr Sparen, sondern das <strong>Hebel-System</strong>.`;
                 act1.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">1. Travel- & Card-Hebel</span><span class="text-[11px] text-gray-300">Deine ${Math.round(cardSpend)} € monatlichen Kartenausgaben für ${travelBenefitYear} €/Jahr Prämien hebeln.</span>`;
                 act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Automatisches Invest</span><span class="text-[11px] text-gray-300">Freien Cashflow (${Math.round(freeCashflow)} €) automatisiert in rentable Assets leiten.</span>`;
             } else if (score >= 50) {
@@ -495,7 +564,7 @@
                 document.getElementById('score_sub').innerText = 'Fixkostenquote bei ' + ratio.toFixed(1) + '% – Rohrlecks schließen';
                 tagEl.innerText = "Optimierung";
                 tagEl.className = "text-[10px] text-gold-400 uppercase font-semibold";
-                recEl.innerHTML = `Dein Fundament steht, aber deine Fixkostenquote liegt bei <strong>${ratio.toFixed(1)}%</strong>. Wir haben <strong>${leakYear} € jährliches Einsparpotenzial</strong> bei Abos, Altverträgen und Versicherungen gefunden. Schließt du diese Rohrlecks, erhöht sich dein freier Cashflow sofort auf über <strong>+${Math.round(freeCashflow + leakMonth)} €/Monat</strong>.`;
+                recEl.innerHTML = `Dein Fundament steht, aber deine Fixkostenquote liegt bei <strong>${ratio.toFixed(1)}%</strong>. Wir haben <strong>${leakYear} € jährliches Einsparpotenzial</strong> bei Abos, Altverträgen und Versicherungen gefunden.`;
                 act1.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">1. Rohrlecks schließen</span><span class="text-[11px] text-gray-300">Abos (${Math.round(costSubs)} €) & Verträge auditieren (${leakYear} €/Jahr freisetzen).</span>`;
                 act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Notgroschen absichern</span><span class="text-[11px] text-gray-300">Reserve auf 3–6 Monatsausgaben (${Math.round(totalCosts * 3)} €) aufbauen.</span>`;
             } else {
@@ -503,14 +572,12 @@
                 document.getElementById('score_sub').innerText = 'Fixkostenquote über 65% – Cashflow wird abgewürgt';
                 tagEl.innerText = "Sofortmaßnahme";
                 tagEl.className = "text-[10px] text-red-400 uppercase font-semibold";
-                recEl.innerHTML = `Achtung: Deine Fixkosten fressen <strong>${ratio.toFixed(1)}%</strong> deines Einkommens auf. Bei unerwarteten Kosten gerät dein System ins Wanken. Dein erster Schritt ist eine radikale Fixkosten-Bereinigung und die Beseitigung teurer Konsumverbindlichkeiten.`;
+                recEl.innerHTML = `Achtung: Deine Fixkosten fressen <strong>${ratio.toFixed(1)}%</strong> deines Einkommens auf. Dein erster Schritt ist eine radikale Fixkosten-Bereinigung und die Beseitigung teurer Konsumverbindlichkeiten.`;
                 act1.innerHTML = `<span class="font-bold text-red-400 block mb-0.5">1. Zinsfresser stoppen</span><span class="text-[11px] text-gray-300">Ratenkredite / Klarna sofort tilgen oder umschulden.</span>`;
                 act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Fixkosten deckeln</span><span class="text-[11px] text-gray-300">Verträge & Wohnnebenkosten sofort auf den Prüfstand stellen.</span>`;
             }
 
-            // Telegram deep link with score
             document.getElementById('alfred_link').href = `https://t.me/SLDConciergeRobot?start=check_${Math.round(score)}`;
-
             nextStep(4);
         }
     </script>
