@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Living Daily | Multi-Konto Cashflow & Fixkosten-Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
@@ -335,6 +336,7 @@
     <!-- Logic -->
     <script>
         let uploadedFiles = [];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         function nextStep(step) {
             document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
@@ -349,6 +351,18 @@
             const chk = document.getElementById(`chk_${type}`);
             const input = document.getElementById(`manual_${type}`);
             if (chk && input) input.classList.toggle('hidden', !chk.checked);
+        }
+
+        async function extractPdfText(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                fullText += content.items.map(item => item.str).join(' ') + '\n';
+            }
+            return fullText;
         }
 
         async function handleMultiFileUpload(event) {
@@ -367,16 +381,11 @@
 
             for (const file of files) {
                 try {
-                    const rawBuffer = await file.arrayBuffer();
-                    const textDecoder = new TextDecoder('utf-8', { fatal: false });
-                    const rawStr = textDecoder.decode(rawBuffer);
-
                     let fullText = '';
-                    const streamMatches = rawStr.match(/\(([^()]{2,100})\)|>([^<>]{2,100})</g);
-                    if (streamMatches && streamMatches.length > 5) {
-                        fullText = streamMatches.map(m => m.replace(/^[(\>]|[)\<]$/g, '')).join(' ');
+                    if (file.name.toLowerCase().endsWith('.pdf')) {
+                        fullText = await extractPdfText(file);
                     } else {
-                        fullText = rawStr.replace(/[^\x20-\x7E\xC0-\xFF\n\r]/g, ' ');
+                        fullText = await file.text();
                     }
 
                     const parsed = parseStatement(fullText);
@@ -408,37 +417,38 @@
         }
 
         function parseStatement(text) {
-            const extractCategorySum = (keywords) => {
-                let sum = 0;
-                const lower = text.toLowerCase();
-                for (const kw of keywords) {
-                    let idx = 0;
-                    while ((idx = lower.indexOf(kw, idx)) !== -1) {
-                        const snippet = text.substring(Math.max(0, idx - 40), Math.min(text.length, idx + 120));
-                        const match = snippet.match(/[-+]?\s*(\d{1,3}(?:\.\d{3})*,\d{2})|(\d{1,4}\.\d{2})/);
-                        if (match) {
-                            const clean = match[0].replace(/[+\-\sEUR]/g, '').replace('.', '').replace(',', '.');
-                            const val = parseFloat(clean);
-                            if (!isNaN(val) && val > 0 && val < 10000) sum += val;
-                        }
-                        idx += kw.length + 10;
-                    }
-                }
-                return sum;
+            const lines = text.split(/\n|\r/).map(l => l.trim()).filter(l => l.length > 3);
+            const result = { income:0, housing:0, mobility:0, insurance:0, subs:0, groceries:0, debt:0 };
+
+            const parseAmount = (s) => {
+                const m = s.replace(/\s/g,'').match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/);
+                if (!m) return 0;
+                let v = m[0].replace(/\./g,'').replace(',','.');
+                let num = parseFloat(v);
+                return isNaN(num) ? 0 : Math.abs(num);
             };
 
-            const income = extractCategorySum(['gehalt', 'lohn', 'salary', 'arbeitgeber', 'gutschrift']);
-            const housing = extractCategorySum(['miete', 'wohngeld', 'stadtwerke', 'strom', 'gas', 'hausverwaltung']);
-            const mobility = extractCategorySum(['shell', 'aral', 'total', 'leasing', 'kraftstoff', 'tankstelle', 'bahn']);
-            const insurance = extractCategorySum(['huk', 'allianz', 'versicherung', 'haftpflicht', 'barmer', 'krankenkasse']);
-            const subs = extractCategorySum(['netflix', 'spotify', 'fitx', 'chatgpt', 'openai', 'gym', 'prime', 'vodafone']);
-            const groceries = extractCategorySum(['rewe', 'edeka', 'aldi', 'lidl', 'kaufland', 'supermarkt']);
-            const debt = extractCategorySum(['klarna', 'rate', 'kredit', 'santander', 'dispo']);
-
-            return {
-                income, housing, mobility, insurance, subs, groceries, debt,
-                totalCosts: housing + mobility + insurance + subs + groceries + debt
+            const catOf = (line) => {
+                const l = line.toLowerCase();
+                if (l.includes('gehalt') || l.includes('lohn') || l.includes('gutschrift') || l.includes('zins')) return 'income';
+                if (l.includes('miete') || l.includes('strom') || l.includes('gas') || l.includes('stadtwerke') || l.includes('hausverwaltung')) return 'housing';
+                if (l.includes('shell') || l.includes('aral') || l.includes('tankstelle') || l.includes('leasing') || l.includes('bahn') || l.includes('kraftstoff')) return 'mobility';
+                if (l.includes('huk') || l.includes('allianz') || l.includes('versicherung') || l.includes('barmer') || l.includes('krankenkasse')) return 'insurance';
+                if (l.includes('netflix') || l.includes('spotify') || l.includes('vodafone') || l.includes('fitness') || l.includes('prime') || l.includes('gym')) return 'subs';
+                if (l.includes('rewe') || l.includes('edeka') || l.includes('aldi') || l.includes('lidl') || l.includes('kaufland') || l.includes('supermarkt')) return 'groceries';
+                if (l.includes('klarna') || l.includes('rate') || l.includes('dispo') || l.includes('kredit')) return 'debt';
+                return null;
             };
+
+            for (const line of lines) {
+                const cat = catOf(line);
+                if (!cat) continue;
+                const amt = parseAmount(line);
+                if (amt > 0) result[cat] += amt;
+            }
+
+            result.totalCosts = result.housing + result.mobility + result.insurance + result.subs + result.groceries + result.debt;
+            return result;
         }
 
         function aggregateAndFill() {
@@ -452,7 +462,7 @@
                 const type = sel.value;
                 f.type = type;
 
-                if (type === 'savings') return; // Tagesgeld/Broker: keine Fixkosten doppelt zählen
+                if (type === 'savings') return;
 
                 inc += f.data.income;
                 housing += f.data.housing;
@@ -467,14 +477,12 @@
                 }
             });
 
-            // Manuelle Ergänzungen
             let other = 0;
-            const addManual = (id) => {
+            ['cash','paypal','crypto','third'].forEach(id => {
                 const chk = document.getElementById(`chk_${id}`);
                 const input = document.getElementById(`manual_${id}`);
                 if (chk && chk.checked && input) other += parseFloat(input.value) || 0;
-            };
-            ['cash','paypal','crypto','third'].forEach(addManual);
+            });
 
             const setVal = (id, val) => {
                 const el = document.getElementById(id);
@@ -556,7 +564,7 @@
                 document.getElementById('score_sub').innerText = 'Gesunde Fixkostenquote – Fokus auf Hebel & Assetaufbau';
                 tagEl.innerText = "Wachstum & Hebel";
                 tagEl.className = "text-[10px] text-emerald-400 uppercase font-semibold";
-                recEl.innerHTML = `Hervorragend: Deine Fixkostenquote liegt mit <strong>${ratio.toFixed(1)}%</strong> im gesunden Bereich. Du hast jeden Monat <strong>+${Math.round(freeCashflow)} €</strong> freien Cashflow zur Verfügung. Dein nächster Hebel ist nicht noch mehr Sparen, sondern das <strong>Hebel-System</strong>.`;
+                recEl.innerHTML = `Hervorragend: Deine Fixkostenquote liegt mit <strong>${ratio.toFixed(1)}%</strong> im gesunden Bereich. Du hast jeden Monat <strong>+${Math.round(freeCashflow)} €</strong> freien Cashflow zur Verfügung.`;
                 act1.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">1. Travel- & Card-Hebel</span><span class="text-[11px] text-gray-300">Deine ${Math.round(cardSpend)} € monatlichen Kartenausgaben für ${travelBenefitYear} €/Jahr Prämien hebeln.</span>`;
                 act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Automatisches Invest</span><span class="text-[11px] text-gray-300">Freien Cashflow (${Math.round(freeCashflow)} €) automatisiert in rentable Assets leiten.</span>`;
             } else if (score >= 50) {
@@ -564,7 +572,7 @@
                 document.getElementById('score_sub').innerText = 'Fixkostenquote bei ' + ratio.toFixed(1) + '% – Rohrlecks schließen';
                 tagEl.innerText = "Optimierung";
                 tagEl.className = "text-[10px] text-gold-400 uppercase font-semibold";
-                recEl.innerHTML = `Dein Fundament steht, aber deine Fixkostenquote liegt bei <strong>${ratio.toFixed(1)}%</strong>. Wir haben <strong>${leakYear} € jährliches Einsparpotenzial</strong> bei Abos, Altverträgen und Versicherungen gefunden.`;
+                recEl.innerHTML = `Dein Fundament steht, aber deine Fixkostenquote liegt bei <strong>${ratio.toFixed(1)}%</strong>. Wir haben <strong>${leakYear} € jährliches Einsparpotenzial</strong> gefunden.`;
                 act1.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">1. Rohrlecks schließen</span><span class="text-[11px] text-gray-300">Abos (${Math.round(costSubs)} €) & Verträge auditieren (${leakYear} €/Jahr freisetzen).</span>`;
                 act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Notgroschen absichern</span><span class="text-[11px] text-gray-300">Reserve auf 3–6 Monatsausgaben (${Math.round(totalCosts * 3)} €) aufbauen.</span>`;
             } else {
@@ -572,7 +580,7 @@
                 document.getElementById('score_sub').innerText = 'Fixkostenquote über 65% – Cashflow wird abgewürgt';
                 tagEl.innerText = "Sofortmaßnahme";
                 tagEl.className = "text-[10px] text-red-400 uppercase font-semibold";
-                recEl.innerHTML = `Achtung: Deine Fixkosten fressen <strong>${ratio.toFixed(1)}%</strong> deines Einkommens auf. Dein erster Schritt ist eine radikale Fixkosten-Bereinigung und die Beseitigung teurer Konsumverbindlichkeiten.`;
+                recEl.innerHTML = `Achtung: Deine Fixkosten fressen <strong>${ratio.toFixed(1)}%</strong> deines Einkommens auf.`;
                 act1.innerHTML = `<span class="font-bold text-red-400 block mb-0.5">1. Zinsfresser stoppen</span><span class="text-[11px] text-gray-300">Ratenkredite / Klarna sofort tilgen oder umschulden.</span>`;
                 act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Fixkosten deckeln</span><span class="text-[11px] text-gray-300">Verträge & Wohnnebenkosten sofort auf den Prüfstand stellen.</span>`;
             }
