@@ -353,16 +353,25 @@
             if (chk && input) input.classList.toggle('hidden', !chk.checked);
         }
 
-        async function extractPdfText(file) {
+        async function extractPdfLines(file) {
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            let fullText = '';
+            let lines = [];
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
-                fullText += content.items.map(item => item.str).join(' ') + '\n';
+                const rows = {};
+                content.items.forEach(item => {
+                    const y = Math.round(item.transform[5]);
+                    if (!rows[y]) rows[y] = [];
+                    rows[y].push({ x: item.transform[4], str: item.str });
+                });
+                Object.keys(rows).sort((a,b) => b-a).forEach(y => {
+                    const line = rows[y].sort((a,b) => a.x-b.x).map(o => o.str).join(' ').trim();
+                    if (line.length > 3) lines.push(line);
+                });
             }
-            return fullText;
+            return lines;
         }
 
         async function handleMultiFileUpload(event) {
@@ -381,14 +390,14 @@
 
             for (const file of files) {
                 try {
-                    let fullText = '';
+                    let lines = [];
                     if (file.name.toLowerCase().endsWith('.pdf')) {
-                        fullText = await extractPdfText(file);
+                        lines = await extractPdfLines(file);
                     } else {
-                        fullText = await file.text();
+                        lines = (await file.text()).split(/\n|\r/).map(l => l.trim()).filter(l => l.length > 3);
                     }
 
-                    const parsed = parseStatement(fullText);
+                    const parsed = parseStatement(lines);
                     uploadedFiles.push({ name: file.name, type: 'checking', data: parsed });
 
                     const row = document.createElement('div');
@@ -416,8 +425,7 @@
             manualBox.classList.remove('hidden');
         }
 
-        function parseStatement(text) {
-            const lines = text.split(/\n|\r/).map(l => l.trim()).filter(l => l.length > 3);
+        function parseStatement(lines) {
             const result = { income:0, housing:0, mobility:0, insurance:0, subs:0, groceries:0, debt:0 };
 
             const parseAmount = (s) => {
