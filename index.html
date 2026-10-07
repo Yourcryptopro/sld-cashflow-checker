@@ -513,6 +513,25 @@
             calculateResults();
         }
 
+        function buildAlfredLink(score, freeCashflow, ratio, leakYear, costHousing, costMobility, costInsurance, costSubs, costGroceries, costDebt, costOther, cardSpend) {
+            const params = new URLSearchParams({
+                start: 'cashflow_audit',
+                score: Math.round(score),
+                cashflow: Math.round(freeCashflow),
+                ratio: ratio.toFixed(1),
+                leak_year: leakYear,
+                housing: Math.round(costHousing),
+                mobility: Math.round(costMobility),
+                insurance: Math.round(costInsurance),
+                subs: Math.round(costSubs),
+                groceries: Math.round(costGroceries),
+                debt: Math.round(costDebt),
+                other: Math.round(costOther),
+                card: Math.round(cardSpend)
+            });
+            return `https://t.me/SLDConciergeRobot?${params.toString()}`;
+        }
+
         function calculateResults() {
             const incomeMain = parseFloat(document.getElementById('income_main').value) || 0;
             const incomeSide = parseFloat(document.getElementById('income_side').value) || 0;
@@ -596,7 +615,7 @@
                 act2.innerHTML = `<span class="font-bold text-gold-400 block mb-0.5">2. Fixkosten deckeln</span><span class="text-[11px] text-gray-300">Verträge & Wohnnebenkosten sofort auf den Prüfstand stellen.</span>`;
             }
 
-            document.getElementById('alfred_link').href = `https://t.me/SLDConciergeRobot?start=check_${Math.round(score)}`;
+            document.getElementById('alfred_link').href = buildAlfredLink(score, freeCashflow, ratio, leakYear, costHousing, costMobility, costInsurance, costSubs, costGroceries, costDebt, costOther, cardSpend);
             nextStep(4);
         }
     </script>
