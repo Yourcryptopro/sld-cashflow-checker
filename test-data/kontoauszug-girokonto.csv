@@ -1,0 +1,13 @@
+Datum;Buchungstext;Kategorie;Betrag
+2026-09-01;Gehalt Musterfirma GmbH;Einnahmen;3250,00
+2026-09-02;Miete Wohnung Mueller Immobilien;Wohnen;-1150,00
+2026-09-03;Stadtwerke Strom Gas;Wohnen;-135,00
+2026-09-05;REWE Markt Einkauf;Lebensmittel;-84,50
+2026-09-08;HUK Coburg Kfz Versicherung;Versicherungen;-78,00
+2026-09-10;Shell Tankstelle;Mobilität;-62,30
+2026-09-12;Netflix Abo;Abos;-13,99
+2026-09-15;Klarna Ratenzahlung;Kredite;-95,00
+2026-09-18;EDEKA Einkauf;Lebensmittel;-56,20
+2026-09-22;Vodafone Mobilfunk;Abos;-29,99
+2026-09-25;Aldi Einkauf;Lebensmittel;-42,80
+2026-09-28;Fitness First Mitgliedschaft;Abos;-39,90
