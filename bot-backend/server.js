@@ -101,11 +101,16 @@ app.post('/telegram/webhook', async (req,res) => {
       await telegram('sendMessage',{chat_id:message.chat.id,text:recommendation(audit),parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'📅 1:1 Call mit SLD Team ausmachen',url:bookingUrl}]]},disable_web_page_preview:true});
       return;
     }
-    if (payload.startsWith('cashflow_audit')) {
-      await telegram('sendMessage',{chat_id:message.chat.id,text:'Bitte öffne den Cashflow-Check auf der Website und nutze dort „Ergebnis an Alfred senden“. So kann ich dein persönliches Ergebnis abrufen.'});
+    if (!payload) {
+      await telegram('sendMessage',{
+        chat_id:message.chat.id,
+        text:'🧭 Willkommen bei Alfred, deinem SLD Concierge!\n\nErstelle zuerst deinen Cashflow-Check auf der Website. Wenn du fertig bist, klicke dort auf „Ergebnis an Alfred senden“ – dann erhältst du deine persönliche Auswertung und passende nächste Schritte.',
+        reply_markup:{inline_keyboard:[[{text:'Cashflow-Check öffnen',url:'https://yourcryptopro.github.io/sld-cashflow-checker/'}]]},
+        disable_web_page_preview:true
+      });
       return;
     }
-    await telegram('sendMessage',{chat_id:message.chat.id,text:'🧭 Willkommen bei Alfred, deinem SLD Concierge. Erstelle zuerst deinen Cashflow-Check auf der Website und sende das Ergebnis hierher.'});
+    await telegram('sendMessage',{chat_id:message.chat.id,text:'Dieser Start-Link ist nicht erkannt. Bitte öffne den Cashflow-Check auf der Website und nutze „Ergebnis an Alfred senden“.',disable_web_page_preview:true});
   } catch (error) { console.error('Telegram update failed:',error); }
 });
 app.listen(port,()=>console.log(`SLD Concierge Bot läuft auf Port ${port}`));
