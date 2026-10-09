@@ -1,81 +1,44 @@
 # SLD Concierge Bot Backend
 
-Dieses Backend empfängt Telegram-Updates über `/telegram/webhook` und antwortet auf Cashflow-Audits mit scoreabhängigen Handlungsempfehlungen. Jede Antwort kann einen Button **„1:1 Call mit SLD Team ausmachen“** enthalten.
+This service receives Telegram webhook updates and temporarily stores website audit summaries in Redis for multi-user handoff.
 
-## Was der Bot bewertet
+## Flow
 
-- **75–98 %:** Wachstum & Hebel – automatisiertes Investieren, Card-/Travel-Hebel und optionaler Strategie-Call.
-- **50–74 %:** Optimierung – Abos und Versicherungen prüfen, Rücklage aufbauen und 1:1 Call zur Priorisierung der Hebel.
-- **Unter 50 %:** Sofortmaßnahmen – Raten stoppen, Fixkosten durchgehen und klarer 1:1 Call mit dem SLD Team.
+1. The browser parses PDF/CSV files locally and calculates the audit.
+2. Clicking **Ergebnis an Alfred senden** posts only calculated totals to `POST /api/audits` over HTTPS.
+3. The service stores the audit under a random opaque ID in Redis with a 30-minute expiration and returns a short Telegram payload (`audit_<id>`).
+4. The browser opens `https://t.me/SLDConciergeRobot?start=<payload>`.
+5. Telegram delivers `/start audit_<id>`. The backend atomically consumes that one-time Redis key and replies with score-based recommendations.
 
-## Railway einrichten
+Raw statements are never uploaded. Audit totals are retained temporarily for up to 30 minutes and are deleted when used.
 
-1. Öffne [railway.app](https://railway.app) und melde dich mit GitHub an.
-2. Klicke auf **New Project** → **Deploy from GitHub repo**.
-3. Wähle das Repository **`Yourcryptopro/sld-cashflow-checker`** aus.
-4. Öffne die Service-Einstellungen und trage bei **Root Directory** ein:
+## Railway setup
 
-   ```
-   bot-backend
-   ```
+Repository: `Yourcryptopro/sld-cashflow-checker`
 
-5. Öffne **Variables** und lege diese Werte an:
+- Service Root Directory: `bot-backend`
+- Add a Redis service to the Railway project (New → Database → Redis).
+- In the bot service variables, add `REDIS_URL` referencing the Redis service's private connection variable. Railway reference syntax is usually `${{Redis.REDIS_URL}}`; choose the Redis service's `REDIS_URL` from the variable picker if the service has another name.
+- Keep `TELEGRAM_BOT_TOKEN` set in Railway only.
+- Set `CALL_BOOKING_URL` to the actual SLD booking page.
+- Set `ALLOWED_ORIGIN` to the exact public origin where the website runs.
+- `WEBHOOK_SECRET` is optional; if set, register the identical value with Telegram `setWebhook`.
 
-   | Variable | Wert |
-   |---|---|
-   | `TELEGRAM_BOT_TOKEN` | Token deines Bots aus BotFather. Nie in GitHub speichern. |
-   | `CALL_BOOKING_URL` | Echte URL für deine SLD-Call-Buchung. Vorläufig: `https://smartlivingdaily.io/call` |
-   | `WEBHOOK_SECRET` | Ein langes, zufälliges Geheimnis, z. B. mit Passwortmanager erzeugt. |
+After adding Redis and variables, deploy/redeploy the bot service. `GET /health` should report `"auditStore":"redis"`. If Redis is unavailable, the API returns 503 rather than silently storing audits in local memory.
 
-6. Railway führt das Deployment automatisch aus. Falls nötig: **Redeploy** klicken.
-7. Öffne **Settings** → **Networking** → **Generate Domain**.
-8. Kopiere die erzeugte Railway-Domain, z. B. `https://dein-bot-production.up.railway.app`.
-9. Öffne im Browser:
+## Test the complete flow
 
-   ```
-   https://DEINE-RAILWAY-DOMAIN/health
-   ```
+1. Open the deployed website and calculate an audit.
+2. Click **Ergebnis an Alfred senden**.
+3. Telegram should open with a short `audit_...` payload.
+4. Alfred should reply with a score-based recommendation and the configured 1:1 Call button.
 
-   Erwartete Antwort:
+If the browser reports CORS, update `ALLOWED_ORIGIN` to the exact site origin in Railway, then redeploy.
 
-   ```json
-   {"ok":true,"service":"sld-concierge-bot"}
-   ```
+## Score bands
 
-## Telegram-Webhook setzen
+- 75–100: growth and cash-flow levers; optional 1:1 discussion.
+- 50–74: review subscriptions/contracts and build a reserve; offer a prioritization call.
+- 0–49: stabilize cashflow first and recommend a timely team call.
 
-Ersetze die drei Platzhalter in dieser Adresse und öffne sie **einmal** im Browser:
-
-```text
-https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://<DEINE-RAILWAY-DOMAIN>/telegram/webhook&secret_token=<WEBHOOK_SECRET>
-```
-
-Wenn alles passt, zeigt Telegram eine Antwort mit `"ok":true`.
-
-> **Achtung:** Den echten Bot-Token niemals teilen, in GitHub eintragen oder in Screenshots zeigen.
-
-## Test in Telegram
-
-Sende dem Bot nach dem erfolgreichen Webhook-Test diese Nachricht:
-
-```text
-/start cashflow_audit&score=60&cashflow=250&ratio=58.4&leak_year=720&subs=45&insurance=120&debt=0
-```
-
-Erwartet wird eine gelbe Optimierungsantwort mit dem Call-Button.
-
-## Wichtige Deep-Link-Einschränkung
-
-Telegram Deep Links unterstützen keine beliebig langen Audit-Daten. Für den echten Produktfluss sollte die Website daher später nur eine kurze Audit-ID senden, z. B.:
-
-```text
-/start audit_Ab12Xy
-```
-
-Das Backend lädt die vollständigen Audit-Werte dann anhand dieser ID von einer kleinen Datenbank oder API. Die aktuelle Datei ist bereits darauf vorbereitet, `audit_<id>` zu erkennen. Für die vollständige Audit-ID-Übergabe braucht es als nächsten Ausbau einen kleinen Speicher-/API-Endpunkt.
-
-## Sicherheit
-
-- Den Telegram Bot Token nie in GitHub, die Website, Browser-Screenshots oder Chats schreiben.
-- Wenn ein Token versehentlich veröffentlicht wurde, ihn sofort in BotFather widerrufen und einen neuen Token erzeugen.
-- `WEBHOOK_SECRET` in Railway setzen und denselben Wert beim `setWebhook`-Aufruf verwenden.
+Recommendations are educational prompts, not individualized investment, tax, legal, or debt advice.
