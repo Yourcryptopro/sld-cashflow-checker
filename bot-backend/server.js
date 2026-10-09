@@ -8,7 +8,7 @@ app.use(express.json({ limit: '16kb' }));
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bookingUrl = process.env.CALL_BOOKING_URL || 'https://smartlivingdaily.io/call';
 const webhookSecret = process.env.WEBHOOK_SECRET;
-const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://yourcryptopro.github.io';
+const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://sld-cashflow-checker.vercel.app';
 const port = process.env.PORT || 3000;
 const AUDIT_TTL_SECONDS = 30 * 60;
 const redisUrl = process.env.REDIS_URL;
