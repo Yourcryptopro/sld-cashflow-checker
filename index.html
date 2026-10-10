@@ -153,30 +153,66 @@ function calculateResults() {
 
   let title, tag, recommendation, a1, a2;
 
-  if (score >= 75) {
-    title = 'Starkes Uhrwerk';
-    tag = 'Guter Spielraum & Puffer';
+  const essentialCosts =
+    costs.housing +
+    costs.mobility +
+    costs.insurance +
+    costs.groceries +
+    costs.debt;
+
+  const reserveMonths = essentialCosts > 0
+    ? reserve / essentialCosts
+    : 0;
+
+  if (income <= 0) {
+    title = 'Einnahmen prüfen';
+    tag = 'Daten ergänzen';
     recommendation =
-      `Du hast nach den erfassten Kosten rund ${Math.round(freeCashflow)} € monatlichen Spielraum. ` +
-      `Deine Rücklage deckt aktuell etwa ${runway.toFixed(1)} Monate deiner erfassten Ausgaben ab.`;
-    a1 = '1. Automatischen Spar- oder Invest-Transfer passend zu deinen Zielen prüfen.';
-    a2 = `2. Fixkostenquote von ${ratioPercent.toFixed(1)} % regelmäßig gegenchecken.`;
-  } else if (score >= 50) {
-    title = 'Solides Fundament mit Hebeln';
-    tag = 'Optimierung';
-    recommendation =
-      `Dein Score basiert auf Spielraum, Fixkosten, Kreditbelastung und Rücklagen. ` +
-      `Deine Rücklage deckt aktuell etwa ${runway.toFixed(1)} Monate der erfassten Ausgaben ab.`;
-    a1 = `1. Schwächsten Bereich prüfen: ${runway < 3 ? 'Rücklagen' : 'laufende Fixkosten'}.`;
-    a2 = `2. Abos (${Math.round(costs.subs)} €) und Verträge auf Nutzen und Kosten prüfen.`;
-  } else {
+      'Es sind keine monatlichen Einnahmen erfasst. Prüfe, ob dein Einkommen vollständig eingetragen ist. Ohne diese Angabe lässt sich der Cashflow nicht sinnvoll bewerten.';
+    a1 = '1. Monatliches Netto-Haupteinkommen ergänzen.';
+    a2 = '2. Nebeneinkünfte nur eintragen, wenn sie regelmäßig verfügbar sind.';
+  } else if (freeCashflow < 0) {
     title = 'Cashflow zuerst stabilisieren';
-    tag = 'Sofortmaßnahme';
+    tag = 'Monatliches Minus';
     recommendation =
-      `Der erfasste monatliche Spielraum liegt bei ${Math.round(freeCashflow)} €. ` +
-      `Priorität hat jetzt, Einnahmen und verpflichtende Ausgaben vollständig zu erfassen und den Puffer aufzubauen.`;
-    a1 = '1. Nicht notwendige Ausgaben und neue Ratenkäufe zuerst prüfen.';
-    a2 = '2. Einen konkreten Monatsbetrag für Rücklage oder Entlastung festlegen.';
+      `Nach den erfassten Zahlen liegen deine Ausgaben rund ${Math.abs(Math.round(freeCashflow))} € über deinen Einnahmen. Prüfe zuerst, ob alle Angaben vollständig sind. Verschaffe dir dann einen Überblick über Fälligkeiten und notwendige Ausgaben, bevor du weitere finanzielle Schritte planst.`;
+    a1 = '1. Prüfen, ob Einnahmen, Barzahlungen und Ausgaben vollständig erfasst sind.';
+    a2 = '2. Notwendige Zahlungen und Fälligkeiten für den nächsten Monat überblicken.';
+  } else if (costs.debt > 0 && debtRatio >= 0.20) {
+    title = 'Kreditbelastung genauer prüfen';
+    tag = 'Raten im Fokus';
+    recommendation =
+      `Die erfassten Kredit- und Ratenzahlungen betragen ${Math.round(costs.debt)} € pro Monat. Prüfe für jeden Kredit Rate, Restschuld und Zinssatz. Ohne diese Details kann das Tool keine verlässliche Tilgungsreihenfolge bestimmen.`;
+    a1 = '1. Kreditraten, Restschulden und Zinssätze zusammentragen.';
+    a2 = '2. Keine neue Rate eingehen, bevor die monatliche Belastung klar ist.';
+  } else if (reserveMonths < 1) {
+    title = 'Puffer schrittweise aufbauen';
+    tag = 'Rücklage im Fokus';
+    recommendation =
+      `Die angegebene Reserve entspricht ungefähr ${reserveMonths.toFixed(1)} Monaten deiner hier angesetzten Grundausgaben. Überlege, welcher kleine monatliche Betrag realistisch zurückgelegt werden kann. Das ist eine Orientierung, kein allgemeingültiges Sparziel.`;
+    a1 = '1. Einen Betrag wählen, der auch in einem normalen Monat machbar ist.';
+    a2 = '2. Prüfen, ob die angegebene Reserve kurzfristig verfügbar ist.';
+  } else if (fixedRatio >= 0.60) {
+    title = 'Laufende Verpflichtungen prüfen';
+    tag = 'Fixkosten im Fokus';
+    recommendation =
+      `Die erfassten Fixkosten machen ${ratioPercent.toFixed(1)} % deiner Einnahmen aus. Prüfe die größten Verträge und regelmäßigen Zahlungen einzeln auf Kosten, Nutzen und Kündigungsbedingungen.`;
+    a1 = '1. Die drei größten laufenden Kosten identifizieren.';
+    a2 = '2. Bei Verträgen Kosten und tatsächlichen Nutzen vergleichen.';
+  } else if (score >= 75) {
+    title = 'Guter finanzieller Spielraum';
+    tag = 'Nächste Ziele planen';
+    recommendation =
+      `Nach den erfassten Zahlen bleiben etwa ${Math.round(freeCashflow)} € im Monat übrig. Überlege, wie du diesen Betrag auf Rücklage, absehbare Ausgaben und persönliche Ziele verteilen möchtest.`;
+    a1 = '1. Einen festen Betrag für bekannte kommende Ausgaben einplanen.';
+    a2 = '2. Den verbleibenden Spielraum passend zu deinen Zielen verteilen.';
+  } else {
+    title = 'Größten Hebel auswählen';
+    tag = 'Überblick schaffen';
+    recommendation =
+      `Dein rechnerischer monatlicher Spielraum beträgt etwa ${Math.round(freeCashflow)} €. Die Werte zeigen nur die eingegebenen Beträge. Prüfe zuerst, welche Kosten regelmäßig anfallen und wo eine Änderung für dich realistisch wäre.`;
+    a1 = `1. Abos und Verträge (${Math.round(costs.subs)} € erfasst) auf Nutzen und Kosten prüfen.`;
+    a2 = `2. Rücklage und Ausgaben vergleichen: etwa ${reserveMonths.toFixed(1)} Monate der angesetzten Grundausgaben.`;
   }
 
   document.getElementById('score_label').innerText = title;
