@@ -7,7 +7,7 @@ const app = express();
 app.use(express.json({ limit: '16kb' }));
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const bookingUrl = 'https://calendly.com/slderstgespraech/30min';
-const cashflowUrl = 'https://sld-cashflow-checker-vl37.vercel.app/';
+const supportUrl = 'https://t.me/SmartlivingSupport';
 const webhookSecret = process.env.WEBHOOK_SECRET;
 const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://sld-cashflow-checker.vercel.app';
 const port = process.env.PORT || 3000;
@@ -71,13 +71,34 @@ async function telegram(method, body) {
 function mainMenu() {
   return { inline_keyboard: [
     [{ text: '🚀 Inner Circle Bewerbung', callback_data: 'sld_application' }],
-    [{ text: '💸 Cashflow-Check starten', url: cashflowUrl }],
-    [{ text: '🧭 Hilfe & Kontakt', callback_data: 'sld_help' }],
-    [{ text: '📈 1:1 Call mit SLD Team', url: bookingUrl }]
+    [{ text: '🧭 Hilfe & Kontakt', callback_data: 'sld_help' }]
   ] };
 }
-async function sendMenu(chatId, text = '🧭 Willkommen bei Alfred, deinem SLD Concierge!\n\nErstelle zuerst deinen Cashflow-Check auf der Website. Wenn du fertig bist, klicke dort auf „Ergebnis an Alfred senden“ – dann erhältst du deine persönliche Auswertung und passende nächste Schritte.') {
+async function sendMenu(chatId, text = '🧭 Willkommen bei Alfred, deinem SLD Concierge!\n\nHier erfährst du mehr über den Inner Circle, kannst dich bewerben oder unser Team kontaktieren.\n\nWähle einen der Buttons unten. Mit /menu kannst du dieses Menü jederzeit erneut aufrufen.') {
   return telegram('sendMessage', { chat_id: chatId, text, reply_markup: mainMenu(), disable_web_page_preview: true });
+}
+async function sendApplication(chatId) {
+  return telegram('sendMessage', {
+    chat_id: chatId,
+    text: '🚀 Der Smart Living Daily Inner Circle\n\nDu möchtest nicht nur Tipps sammeln, sondern konkret etwas verändern? Im Inner Circle arbeiten wir gemeinsam an deinen persönlichen Zielen – mit engerer Begleitung durch das SLD-Team und Austausch mit anderen Mitgliedern.\n\nIm Mittelpunkt steht die Umsetzung: klare nächste Schritte, gegenseitige Unterstützung und dein eigener aktiver Beitrag.\n\n📝 Du möchtest beim kommenden Start dabei sein?\n\nSchick unserem Support eine kurze Nachricht mit deinen Antworten:\n\n1. Was möchtest du mit unserer Unterstützung konkret erreichen?\n2. Warum willst du gerade jetzt dabei sein?\n3. Was bist du bereit, an Zeit und eigenem Einsatz einzubringen?\n\nWir prüfen deine Antworten und melden uns mit dem nächsten Schritt. Deine Bewerbung ist noch keine Zusage.',
+    reply_markup: { inline_keyboard: [
+      [{ text: '✉️ Bewerbung ans Team senden', url: supportUrl }],
+      [{ text: '⬅️ Zurück zum Menü', callback_data: 'sld_menu' }]
+    ] },
+    disable_web_page_preview: true
+  });
+}
+async function sendHelp(chatId) {
+  return telegram('sendMessage', {
+    chat_id: chatId,
+    text: '🧭 Hilfe & Kontakt\n\nDu hast Fragen zu Smart Living Daily oder zum Inner Circle? Schreib unserem Team direkt an @SmartlivingSupport.\n\nFür eine Inner-Circle-Bewerbung wähle im Menü „🚀 Inner Circle Bewerbung“. Dort erfährst du mehr und findest die drei Bewerbungsfragen.\n\nMit /menu kannst du jederzeit das Startmenü aufrufen.',
+    reply_markup: { inline_keyboard: [
+      [{ text: '✉️ Support kontaktieren', url: supportUrl }],
+      [{ text: '🚀 Inner Circle Bewerbung', callback_data: 'sld_application' }],
+      [{ text: '⬅️ Zurück zum Menü', callback_data: 'sld_menu' }]
+    ] },
+    disable_web_page_preview: true
+  });
 }
 app.get('/health', (req,res) => res.json({ok:true,service:'sld-concierge-bot',auditStore:redis?.isReady?'redis':'unavailable'}));
 app.post('/api/audits', async (req,res) => {
@@ -98,11 +119,9 @@ app.post('/telegram/webhook', async (req,res) => {
       await telegram('answerCallbackQuery', { callback_query_id: callback.id });
       if (callback.message?.chat?.type !== 'private') return;
       const chatId = callback.message.chat.id;
-      if (callback.data === 'sld_application') {
-        await sendMenu(chatId, '🚀 Inner Circle Bewerbung\n\nDie Bewerbung für den Inner Circle wird gerade vorbereitet.\n\nBuche dir bis dahin gerne ein Erstgespräch mit dem SLD-Team über den Button unten.');
-      } else if (callback.data === 'sld_help') {
-        await sendMenu(chatId, '🧭 Hilfe & Kontakt\n\n💸 Cashflow-Check: Prüfe deine finanzielle Ausgangslage. Klicke nach der Auswertung auf „Ergebnis an Alfred senden“, um deine nächsten Schritte zu erhalten.\n\n🚀 Inner Circle: Das Bewerbungsformular wird gerade vorbereitet.\n\n📈 Persönlicher Kontakt: Buche ein 30-minütiges Erstgespräch mit dem SLD-Team über den Button unten.\n\nMit /menu kommst du jederzeit zurück zum Startmenü.');
-      }
+      if (callback.data === 'sld_application') await sendApplication(chatId);
+      else if (callback.data === 'sld_help') await sendHelp(chatId);
+      else if (callback.data === 'sld_menu') await sendMenu(chatId);
     } catch (error) { console.error('Telegram callback failed:', error); }
     return;
   }
