@@ -6,7 +6,8 @@ import { createClient } from 'redis';
 const app = express();
 app.use(express.json({ limit: '16kb' }));
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bookingUrl = process.env.CALL_BOOKING_URL || 'https://smartlivingdaily.io/call';
+const bookingUrl = 'https://calendly.com/slderstgespraech/30min';
+const cashflowUrl = 'https://sld-cashflow-checker-vl37.vercel.app/';
 const webhookSecret = process.env.WEBHOOK_SECRET;
 const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://sld-cashflow-checker.vercel.app';
 const port = process.env.PORT || 3000;
@@ -67,6 +68,17 @@ async function telegram(method, body) {
   if (!result.ok) throw new Error(result.description || 'Telegram API error');
   return result.result;
 }
+function mainMenu() {
+  return { inline_keyboard: [
+    [{ text: '🚀 Inner Circle Bewerbung', callback_data: 'sld_application' }],
+    [{ text: '💸 Cashflow-Check starten', url: cashflowUrl }],
+    [{ text: '🧭 Hilfe & Kontakt', callback_data: 'sld_help' }],
+    [{ text: '📈 1:1 Call mit SLD Team', url: bookingUrl }]
+  ] };
+}
+async function sendMenu(chatId, text = '🧭 Willkommen bei Alfred, deinem SLD Concierge!\n\nErstelle zuerst deinen Cashflow-Check auf der Website. Wenn du fertig bist, klicke dort auf „Ergebnis an Alfred senden“ – dann erhältst du deine persönliche Auswertung und passende nächste Schritte.') {
+  return telegram('sendMessage', { chat_id: chatId, text, reply_markup: mainMenu(), disable_web_page_preview: true });
+}
 app.get('/health', (req,res) => res.json({ok:true,service:'sld-concierge-bot',auditStore:redis?.isReady?'redis':'unavailable'}));
 app.post('/api/audits', async (req,res) => {
   try {
@@ -79,13 +91,33 @@ app.post('/api/audits', async (req,res) => {
 });
 app.post('/telegram/webhook', async (req,res) => {
   if (webhookSecret && req.get('x-telegram-bot-api-secret-token') !== webhookSecret) return res.sendStatus(401);
+  const callback = req.body?.callback_query;
+  if (callback) {
+    res.sendStatus(200);
+    try {
+      await telegram('answerCallbackQuery', { callback_query_id: callback.id });
+      if (callback.message?.chat?.type !== 'private') return;
+      const chatId = callback.message.chat.id;
+      if (callback.data === 'sld_application') {
+        await sendMenu(chatId, '🚀 Inner Circle Bewerbung\n\nDie Bewerbung für den Inner Circle wird gerade vorbereitet.\n\nBuche dir bis dahin gerne ein Erstgespräch mit dem SLD-Team über den Button unten.');
+      } else if (callback.data === 'sld_help') {
+        await sendMenu(chatId, '🧭 Hilfe & Kontakt\n\n💸 Cashflow-Check: Prüfe deine finanzielle Ausgangslage. Klicke nach der Auswertung auf „Ergebnis an Alfred senden“, um deine nächsten Schritte zu erhalten.\n\n🚀 Inner Circle: Das Bewerbungsformular wird gerade vorbereitet.\n\n📈 Persönlicher Kontakt: Buche ein 30-minütiges Erstgespräch mit dem SLD-Team über den Button unten.\n\nMit /menu kommst du jederzeit zurück zum Startmenü.');
+      }
+    } catch (error) { console.error('Telegram callback failed:', error); }
+    return;
+  }
   const message = req.body?.message;
   if (!message?.text || !message?.chat?.id) return res.sendStatus(200);
-  const match = message.text.trim().match(/^\/start(?:\s+([A-Za-z0-9_-]{1,64}))?/);
+  const match = message.text.trim().match(/^\/(start|menu)(?:@SLDConciergeRobot)?(?:\s+([A-Za-z0-9_-]{1,64}))?$/i);
   if (!match) return res.sendStatus(200);
   res.sendStatus(200);
   try {
-    const payload = match[1] || '';
+    const command = match[1].toLowerCase();
+    const payload = match[2] || '';
+    if (command === 'menu' || !payload) {
+      if (message.chat.type === 'private') await sendMenu(message.chat.id);
+      return;
+    }
     if (payload.startsWith('audit_')) {
       if (!redis?.isReady) {
         await telegram('sendMessage',{chat_id:message.chat.id,text:'Der Audit-Speicher ist gerade nicht erreichbar. Bitte starte den Check erneut.'});
@@ -99,15 +131,6 @@ app.post('/telegram/webhook', async (req,res) => {
       }
       const audit = JSON.parse(raw);
       await telegram('sendMessage',{chat_id:message.chat.id,text:recommendation(audit),parse_mode:'Markdown',reply_markup:{inline_keyboard:[[{text:'📅 1:1 Call mit SLD Team ausmachen',url:bookingUrl}]]},disable_web_page_preview:true});
-      return;
-    }
-    if (!payload) {
-      await telegram('sendMessage',{
-        chat_id:message.chat.id,
-        text:'🧭 Willkommen bei Alfred, deinem SLD Concierge!\n\nErstelle zuerst deinen Cashflow-Check auf der Website. Wenn du fertig bist, klicke dort auf „Ergebnis an Alfred senden“ – dann erhältst du deine persönliche Auswertung und passende nächste Schritte.',
-        reply_markup:{inline_keyboard:[[{text:'Cashflow-Check öffnen',url:'https://yourcryptopro.github.io/sld-cashflow-checker/'}]]},
-        disable_web_page_preview:true
-      });
       return;
     }
     await telegram('sendMessage',{chat_id:message.chat.id,text:'Dieser Start-Link ist nicht erkannt. Bitte öffne den Cashflow-Check auf der Website und nutze „Ergebnis an Alfred senden“.',disable_web_page_preview:true});
