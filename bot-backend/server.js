@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import { randomBytes } from 'node:crypto';
 import { createClient } from 'redis';
+import { createApplications } from './application.js';
 
 const app = express();
 app.use(express.json({ limit: '16kb' }));
@@ -68,33 +69,23 @@ async function telegram(method, body) {
   if (!result.ok) throw new Error(result.description || 'Telegram API error');
   return result.result;
 }
+const handleApplication = createApplications({ redis, telegram });
 function mainMenu() {
   return { inline_keyboard: [
     [{ text: '🚀 Inner Circle Bewerbung', callback_data: 'sld_application' }],
     [{ text: '🧭 Hilfe & Kontakt', callback_data: 'sld_help' }]
   ] };
 }
-async function sendMenu(chatId, text = '🧭 Willkommen bei Alfred, deinem SLD Concierge!\n\nHier erfährst du mehr über den Inner Circle, kannst dich bewerben oder unser Team kontaktieren.\n\nWähle einen der Buttons unten. Mit /menu kannst du dieses Menü jederzeit erneut aufrufen.') {
+async function sendMenu(chatId, text = '🧭 Willkommen bei Alfred, deinem SLD Concierge!\n\nHier erfährst du mehr über den Inner Circle, kannst dich direkt bei mir bewerben oder Hilfe finden.\n\nWähle einen der Buttons unten. Mit /menu kannst du dieses Menü jederzeit erneut aufrufen.') {
   return telegram('sendMessage', { chat_id: chatId, text, reply_markup: mainMenu(), disable_web_page_preview: true });
-}
-async function sendApplication(chatId) {
-  return telegram('sendMessage', {
-    chat_id: chatId,
-    text: '🚀 Der Smart Living Daily Inner Circle\n\nDu möchtest nicht nur Tipps sammeln, sondern konkret etwas verändern? Im Inner Circle arbeiten wir gemeinsam an deinen persönlichen Zielen – mit engerer Begleitung durch das SLD-Team und Austausch mit anderen Mitgliedern.\n\nIm Mittelpunkt steht die Umsetzung: klare nächste Schritte, gegenseitige Unterstützung und dein eigener aktiver Beitrag.\n\n📝 Du möchtest beim kommenden Start dabei sein?\n\nSchick unserem Support eine kurze Nachricht mit deinen Antworten:\n\n1. Was möchtest du mit unserer Unterstützung konkret erreichen?\n2. Warum willst du gerade jetzt dabei sein?\n3. Was bist du bereit, an Zeit und eigenem Einsatz einzubringen?\n\nWir prüfen deine Antworten und melden uns mit dem nächsten Schritt. Deine Bewerbung ist noch keine Zusage.',
-    reply_markup: { inline_keyboard: [
-      [{ text: '✉️ Bewerbung ans Team senden', url: supportUrl }],
-      [{ text: '⬅️ Zurück zum Menü', callback_data: 'sld_menu' }]
-    ] },
-    disable_web_page_preview: true
-  });
 }
 async function sendHelp(chatId) {
   return telegram('sendMessage', {
     chat_id: chatId,
-    text: '🧭 Hilfe & Kontakt\n\nDu hast Fragen zu Smart Living Daily oder zum Inner Circle? Schreib unserem Team direkt an @SmartlivingSupport.\n\nFür eine Inner-Circle-Bewerbung wähle im Menü „🚀 Inner Circle Bewerbung“. Dort erfährst du mehr und findest die drei Bewerbungsfragen.\n\nMit /menu kannst du jederzeit das Startmenü aufrufen.',
+    text: '🧭 Hilfe & Kontakt\n\nFür eine Inner-Circle-Bewerbung wähle „🚀 Inner Circle Bewerbung“. Ich stelle dir hier drei Fragen. Erst wenn du alle beantwortet und deine Bewerbung bestätigt hast, erhält unser Support-Team deine vollständige Bewerbung.\n\nMit /abbrechen löschst du deinen Bewerbungsentwurf. Mit /menu kommst du zum Startmenü.\n\nBei anderen Fragen erreichst du unser Team unter @SmartLivingSupport.',
     reply_markup: { inline_keyboard: [
-      [{ text: '✉️ Support kontaktieren', url: supportUrl }],
       [{ text: '🚀 Inner Circle Bewerbung', callback_data: 'sld_application' }],
+      [{ text: '✉️ Allgemeiner Support', url: supportUrl }],
       [{ text: '⬅️ Zurück zum Menü', callback_data: 'sld_menu' }]
     ] },
     disable_web_page_preview: true
@@ -112,6 +103,12 @@ app.post('/api/audits', async (req,res) => {
 });
 app.post('/telegram/webhook', async (req,res) => {
   if (webhookSecret && req.get('x-telegram-bot-api-secret-token') !== webhookSecret) return res.sendStatus(401);
+  try {
+    if (await handleApplication(req.body)) return res.sendStatus(200);
+  } catch (error) {
+    console.error('Application update failed:', error.message);
+    return res.sendStatus(503);
+  }
   const callback = req.body?.callback_query;
   if (callback) {
     res.sendStatus(200);
@@ -119,8 +116,7 @@ app.post('/telegram/webhook', async (req,res) => {
       await telegram('answerCallbackQuery', { callback_query_id: callback.id });
       if (callback.message?.chat?.type !== 'private') return;
       const chatId = callback.message.chat.id;
-      if (callback.data === 'sld_application') await sendApplication(chatId);
-      else if (callback.data === 'sld_help') await sendHelp(chatId);
+      if (callback.data === 'sld_help') await sendHelp(chatId);
       else if (callback.data === 'sld_menu') await sendMenu(chatId);
     } catch (error) { console.error('Telegram callback failed:', error); }
     return;
