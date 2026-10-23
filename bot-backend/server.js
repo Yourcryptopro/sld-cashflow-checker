@@ -72,7 +72,7 @@ async function telegram(method, body) {
 const handleApplication = createApplications({ redis, telegram });
 function mainMenu() {
   return { inline_keyboard: [
-    [{ text: '🚀 Zum Inner Circle', callback_data: 'sld_application' }],
+    [{ text: '🚀 Mitgliedschaftsanfrage Inner Circle', callback_data: 'sld_application' }],
     [{ text: '🧭 Hilfe & Kontakt', callback_data: 'sld_help' }]
   ] };
 }
@@ -82,9 +82,9 @@ async function sendMenu(chatId, text = '🧭 Willkommen bei Alfred, deinem SLD C
 async function sendHelp(chatId) {
   return telegram('sendMessage', {
     chat_id: chatId,
-    text: '🧭 Hilfe & Kontakt\n\nFür eine Inner-Circle-Bewerbung wähle „🚀 Zum Inner Circle“. Ich stelle dir hier drei Fragen. Erst wenn du alle beantwortet und deine Bewerbung bestätigt hast, erhält unser Support-Team deine vollständige Bewerbung.\n\nDu möchtest direkt mit uns sprechen? Buche hier dein Erstgespräch:\nhttps://calendly.com/slderstgespraech/30min\n\nMit /abbrechen löschst du deinen Bewerbungsentwurf. Mit /menu kommst du zum Startmenü.\n\nBei anderen Fragen erreichst du unser Team unter @SmartLivingSupport.',
+    text: '🧭 Hilfe & Kontakt\n\nFür eine Inner-Circle-Bewerbung wähle „🚀 Mitgliedschaftsanfrage Inner Circle“. Ich stelle dir hier drei Fragen. Erst wenn du alle beantwortet und deine Bewerbung bestätigt hast, erhält unser Support-Team deine vollständige Bewerbung.\n\nDu möchtest direkt mit uns sprechen? Buche hier dein Erstgespräch:\nhttps://calendly.com/slderstgespraech/30min\n\nMit /abbrechen löschst du deinen Bewerbungsentwurf. Mit /menu kommst du zum Startmenü.\n\nBei anderen Fragen erreichst du unser Team unter @SmartLivingSupport.',
     reply_markup: { inline_keyboard: [
-      [{ text: '🚀 Zum Inner Circle', callback_data: 'sld_application' }],
+      [{ text: '🚀 Mitgliedschaftsanfrage Inner Circle', callback_data: 'sld_application' }],
       [{ text: '📅 Erstgespräch buchen', url: bookingUrl }],
       [{ text: '✉️ Allgemeiner Support', url: supportUrl }],
       [{ text: '⬅️ Zurück zum Menü', callback_data: 'sld_menu' }]
