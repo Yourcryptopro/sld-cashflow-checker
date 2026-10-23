@@ -86,7 +86,6 @@ async function sendHelp(chatId) {
     reply_markup: { inline_keyboard: [
       [{ text: '🚀 Mitgliedschaftsanfrage Inner Circle', callback_data: 'sld_application' }],
       [{ text: '📅 Erstgespräch buchen', url: bookingUrl }],
-      [{ text: '✉️ Allgemeiner Support', url: supportUrl }],
       [{ text: '⬅️ Zurück zum Menü', callback_data: 'sld_menu' }]
     ] },
     disable_web_page_preview: true
